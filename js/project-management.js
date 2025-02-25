@@ -1,4 +1,4 @@
- import { db, storage, auth } from './firebase-config.js';
+import { db, storage, auth } from './firebase-config.js';
 import { 
     collection, 
     addDoc, 
@@ -7,7 +7,9 @@ import {
     where,
     deleteDoc,
     doc,
-    updateDoc 
+    updateDoc,
+    onSnapshot,
+    orderBy 
 } from 'firebase/firestore';
 import { 
     ref, 
@@ -16,46 +18,151 @@ import {
     deleteObject 
 } from 'firebase/storage';
 
+// Referencia a la colección de proyectos
+const projectsCollection = collection(db, 'projects');
+
 // Crear nuevo proyecto
 export async function createNewProject() {
     const name = document.getElementById('projectName').value;
     const description = document.getElementById('projectDescription').value;
     
+    if (!name || !description) {
+        alert('Por favor completa todos los campos');
+        return;
+    }
+
     try {
-        const docRef = await addDoc(collection(db, 'projects'), {
+        await addDoc(projectsCollection, {
             name,
             description,
             userId: auth.currentUser.uid,
             createdAt: new Date(),
-            models: []
+            models: {},
+            status: 'active'
         });
         
         alert('Proyecto creado exitosamente');
-        loadUserProjects();
+        document.getElementById('projectName').value = '';
+        document.getElementById('projectDescription').value = '';
     } catch (error) {
+        console.error('Error al crear proyecto:', error);
         alert('Error al crear el proyecto: ' + error.message);
     }
 }
 
-// Cargar proyectos del usuario
-export async function loadUserProjects() {
-    const projectsDiv = document.getElementById('projectsList');
-    projectsDiv.innerHTML = '';
+// Escuchar cambios en tiempo real de los proyectos
+export function setupProjectsListener() {
+    if (!auth.currentUser) return;
 
     const q = query(
-        collection(db, 'projects'), 
-        where('userId', '==', auth.currentUser.uid)
+        projectsCollection,
+        where('userId', '==', auth.currentUser.uid),
+        orderBy('createdAt', 'desc')
     );
 
-    try {
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach((doc) => {
+    return onSnapshot(q, (snapshot) => {
+        const projectsDiv = document.getElementById('projectsList');
+        projectsDiv.innerHTML = '';
+
+        snapshot.forEach((doc) => {
             const project = doc.data();
             const projectElement = createProjectElement(doc.id, project);
             projectsDiv.appendChild(projectElement);
         });
+    });
+}
+
+// Eliminar proyecto
+export async function deleteProject(projectId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este proyecto?')) return;
+
+    try {
+        // Primero eliminamos todos los modelos asociados
+        const projectDoc = await doc(db, 'projects', projectId);
+        const projectData = (await projectDoc.get()).data();
+
+        if (projectData.models) {
+            for (const modelId in projectData.models) {
+                await deleteModel(projectId, modelId);
+            }
+        }
+
+        // Luego eliminamos el proyecto
+        await deleteDoc(doc(db, 'projects', projectId));
+        alert('Proyecto eliminado exitosamente');
     } catch (error) {
-        console.error('Error al cargar proyectos:', error);
+        console.error('Error al eliminar proyecto:', error);
+        alert('Error al eliminar el proyecto: ' + error.message);
+    }
+}
+
+// Subir modelo 3D
+export async function uploadModel() {
+    const modal = document.getElementById('uploadModelModal');
+    const projectId = modal.dataset.projectId;
+    const file = document.getElementById('modelFile').files[0];
+    const modelName = document.getElementById('modelName').value;
+    const modelDescription = document.getElementById('modelDescription').value;
+
+    if (!file || !modelName || !modelDescription) {
+        alert('Por favor completa todos los campos');
+        return;
+    }
+
+    try {
+        // Crear referencia única para el archivo
+        const modelId = Date.now().toString();
+        const storageRef = ref(storage, `models/${auth.currentUser.uid}/${projectId}/${modelId}_${file.name}`);
+        
+        // Subir archivo
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        // Actualizar documento del proyecto
+        const projectRef = doc(db, 'projects', projectId);
+        await updateDoc(projectRef, {
+            [`models.${modelId}`]: {
+                name: modelName,
+                description: modelDescription,
+                url: downloadURL,
+                fileName: file.name,
+                uploadedAt: new Date(),
+                storageRef: storageRef.fullPath
+            }
+        });
+
+        alert('Modelo subido exitosamente');
+        closeUploadModal();
+    } catch (error) {
+        console.error('Error al subir modelo:', error);
+        alert('Error al subir el modelo: ' + error.message);
+    }
+}
+
+// Eliminar modelo
+export async function deleteModel(projectId, modelId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este modelo?')) return;
+
+    try {
+        const projectRef = doc(db, 'projects', projectId);
+        const projectDoc = await projectRef.get();
+        const modelData = projectDoc.data().models[modelId];
+
+        // Eliminar archivo del storage
+        if (modelData.storageRef) {
+            const storageRef = ref(storage, modelData.storageRef);
+            await deleteObject(storageRef);
+        }
+
+        // Eliminar referencia del modelo en Firestore
+        await updateDoc(projectRef, {
+            [`models.${modelId}`]: deleteDoc()
+        });
+
+        alert('Modelo eliminado exitosamente');
+    } catch (error) {
+        console.error('Error al eliminar modelo:', error);
+        alert('Error al eliminar el modelo: ' + error.message);
     }
 }
 
@@ -64,63 +171,41 @@ function createProjectElement(projectId, project) {
     const div = document.createElement('div');
     div.className = 'project-card';
     div.innerHTML = `
-        <h3>${project.name}</h3>
-        <p>${project.description}</p>
-        <button onclick="showUploadModal('${projectId}')">Añadir Modelo</button>
+        <div class="project-header">
+            <h3>${project.name}</h3>
+            <div class="project-actions">
+                <button onclick="showUploadModal('${projectId}')" class="btn-add">Añadir Modelo</button>
+                <button onclick="deleteProject('${projectId}')" class="btn-delete">Eliminar Proyecto</button>
+            </div>
+        </div>
+        <p class="project-description">${project.description}</p>
         <div class="models-list">
-            ${createModelsListHTML(project.models)}
+            ${createModelsListHTML(project.models, projectId)}
+        </div>
+        <div class="project-footer">
+            <small>Creado: ${new Date(project.createdAt.toDate()).toLocaleDateString()}</small>
         </div>
     `;
     return div;
 }
 
-// Subir modelo 3D
-export async function uploadModel(projectId) {
-    const file = document.getElementById('modelFile').files[0];
-    const modelName = document.getElementById('modelName').value;
-    const modelDescription = document.getElementById('modelDescription').value;
-
-    if (!file) {
-        alert('Por favor selecciona un archivo');
-        return;
-    }
-
-    try {
-        // Subir archivo al Storage
-        const storageRef = ref(storage, `models/${auth.currentUser.uid}/${projectId}/${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-
-        // Actualizar documento del proyecto
-        const projectRef = doc(db, 'projects', projectId);
-        await updateDoc(projectRef, {
-            [`models.${Date.now()}`]: {
-                name: modelName,
-                description: modelDescription,
-                url: downloadURL,
-                fileName: file.name,
-                uploadedAt: new Date()
-            }
-        });
-
-        alert('Modelo subido exitosamente');
-        closeUploadModal();
-        loadUserProjects();
-    } catch (error) {
-        alert('Error al subir el modelo: ' + error.message);
-    }
-}
-
 // Crear HTML para la lista de modelos
-function createModelsListHTML(models) {
-    if (!models) return '';
+function createModelsListHTML(models, projectId) {
+    if (!models) return '<p>No hay modelos en este proyecto</p>';
     
     return Object.entries(models).map(([modelId, model]) => `
         <div class="model-item">
-            <h4>${model.name}</h4>
-            <p>${model.description}</p>
-            <button onclick="viewModel('${model.url}')">Ver en AR</button>
-            <button onclick="deleteModel('${modelId}')">Eliminar</button>
+            <div class="model-header">
+                <h4>${model.name}</h4>
+                <span class="model-date">
+                    ${new Date(model.uploadedAt.toDate()).toLocaleDateString()}
+                </span>
+            </div>
+            <p class="model-description">${model.description}</p>
+            <div class="model-actions">
+                <button onclick="viewModel('${model.url}')" class="btn-view">Ver en AR</button>
+                <button onclick="deleteModel('${projectId}', '${modelId}')" class="btn-delete">Eliminar</button>
+            </div>
         </div>
     `).join('');
 }
