@@ -21,4 +21,7 @@ const app = initializeApp(firebaseConfig);
 // Exportar servicios de Firebase
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const storage = getStorage(app);  
+export const storage = getStorage(app);
+
+// Verificar inicialización
+console.log('Firebase inicializado correctamente'); 
