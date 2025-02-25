@@ -9,12 +9,12 @@
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     
     <!-- Firebase -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="auth.js"></script>
-    <script type="module" src="project-management.js"></script>
-    <script type="module" src="ar-viewer.js"></script>
+    <script type="module" src="./js/firebase-config.js"></script>
+    <script type="module" src="./js/auth.js"></script>
+    <script type="module" src="./js/project-management.js"></script>
+    <script type="module" src="./js/ar-viewer.js"></script>
     
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
     <!-- Sección de Autenticación -->
@@ -69,11 +69,24 @@
 
     <script type="module">
         import { login, autoLogin } from './js/auth.js';
+        
+        // Hacer las funciones disponibles globalmente
         window.login = login;
         
-        document.getElementById('loginButton').addEventListener('click', login);
-        
-        autoLogin();
+        // Agregar event listener cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.addEventListener('click', () => {
+                    console.log('Botón de login clickeado');
+                    login();
+                });
+            }
+            
+            // Intentar auto-login
+            console.log('Iniciando auto-login...');
+            autoLogin();
+        });
     </script>
 </body>
 </html> 
