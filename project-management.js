@@ -9,7 +9,9 @@ import {
     doc,
     updateDoc,
     onSnapshot,
-    orderBy 
+    orderBy,
+    getDoc,
+    deleteField
 } from 'firebase/firestore';
 import { 
     ref, 
@@ -64,9 +66,9 @@ export function setupProjectsListener() {
         const projectsDiv = document.getElementById('projectsList');
         projectsDiv.innerHTML = '';
 
-        snapshot.forEach((doc) => {
-            const project = doc.data();
-            const projectElement = createProjectElement(doc.id, project);
+        snapshot.forEach((docSnapshot) => {
+            const project = docSnapshot.data();
+            const projectElement = createProjectElement(docSnapshot.id, project);
             projectsDiv.appendChild(projectElement);
         });
     });
@@ -77,9 +79,10 @@ export async function deleteProject(projectId) {
     if (!confirm('¿Estás seguro de que deseas eliminar este proyecto?')) return;
 
     try {
-        // Primero eliminamos todos los modelos asociados
-        const projectDoc = await doc(db, 'projects', projectId);
-        const projectData = (await projectDoc.get()).data();
+        // Obtener el documento del proyecto usando getDoc
+        const projectRef = doc(db, 'projects', projectId);
+        const projectSnap = await getDoc(projectRef);
+        const projectData = projectSnap.data();
 
         if (projectData.models) {
             for (const modelId in projectData.models) {
@@ -87,8 +90,8 @@ export async function deleteProject(projectId) {
             }
         }
 
-        // Luego eliminamos el proyecto
-        await deleteDoc(doc(db, 'projects', projectId));
+        // Eliminar el proyecto
+        await deleteDoc(projectRef);
         alert('Proyecto eliminado exitosamente');
     } catch (error) {
         console.error('Error al eliminar proyecto:', error);
@@ -145,18 +148,19 @@ export async function deleteModel(projectId, modelId) {
 
     try {
         const projectRef = doc(db, 'projects', projectId);
-        const projectDoc = await projectRef.get();
-        const modelData = projectDoc.data().models[modelId];
+        const projectSnap = await getDoc(projectRef);
+        const projectData = projectSnap.data();
+        const modelData = projectData.models[modelId];
 
         // Eliminar archivo del storage
         if (modelData.storageRef) {
-            const storageRef = ref(storage, modelData.storageRef);
-            await deleteObject(storageRef);
+            const storageReference = ref(storage, modelData.storageRef);
+            await deleteObject(storageReference);
         }
 
-        // Eliminar referencia del modelo en Firestore
+        // Eliminar la referencia del modelo en Firestore utilizando deleteField
         await updateDoc(projectRef, {
-            [`models.${modelId}`]: deleteDoc()
+            [`models.${modelId}`]: deleteField()
         });
 
         alert('Modelo eliminado exitosamente');
@@ -233,4 +237,4 @@ export function viewModel(modelUrl) {
     modelViewer.src = modelUrl;
     arViewer.style.display = 'block';
     document.getElementById('adminPanel').style.display = 'none';
-} 
+}
