@@ -54,4 +54,90 @@ button {
 
 button:hover {
     background-color: #0056b3;
-}  
+}
+
+.project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.project-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.project-description {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.project-footer {
+    margin-top: 10px;
+    color: #888;
+    font-size: 0.9em;
+}
+
+.model-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.model-date {
+    font-size: 0.8em;
+    color: #888;
+}
+
+.model-description {
+    margin: 5px 0;
+    color: #666;
+}
+
+.model-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-view {
+    background-color: #28a745;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+}
+
+.btn-add {
+    background-color: #17a2b8;
+}
+
+.btn-view:hover {
+    background-color: #218838;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.btn-add:hover {
+    background-color: #138496;
+}
+
+button {
+    padding: 8px 15px;
+    width: auto;
+}
+
+.models-list {
+    margin-top: 15px;
+}
+
+.model-item {
+    transition: all 0.3s ease;
+}
+
+.model-item:hover {
+    transform: translateX(5px);
+} 
