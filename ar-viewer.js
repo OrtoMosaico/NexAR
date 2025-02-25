@@ -1,9 +1,8 @@
 // ar-viewer.js
 
-// Si NO necesitas la autenticación aquí, puedes quitar este import
-// import { auth } from './firebase-config.js';
+// Si no necesitas Firebase aquí, no importa, 
+// no es necesario importar nada adicional
 
-// Clase principal para el visor AR
 class ARViewer {
     constructor() {
       this.modelViewer = document.getElementById('modelViewer');

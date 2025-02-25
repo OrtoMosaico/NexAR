@@ -8,7 +8,7 @@ import {
 
 import { setupProjectsListener } from './project-management.js';
 
-// Credenciales de prueba
+// Credenciales de prueba (asegúrate de que existan en Firebase Auth)
 const TEST_EMAIL = 'test@example.com';
 const TEST_PASSWORD = '123456';
 

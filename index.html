@@ -2,15 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visor AR Web Interactivo</title>
-  
+
   <!-- Model Viewer (CDN) -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  
-  <!-- Quitar cualquier script CDN de Firebase que tuvieras aquí -->
-  
-  <link rel="stylesheet" href="styles.css">
+
+  <!-- Quita cualquier script CDN de Firebase que tuvieras aquí, 
+       porque vamos a usar import ES Modules en los .js locales -->
+
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <!-- Sección de Autenticación -->
@@ -69,7 +70,7 @@
     </div>
   </div>
 
-  <!-- Nuestros scripts locales (en orden) -->
+  <!-- Nuestros scripts (en orden) -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="project-management.js"></script>
