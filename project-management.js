@@ -3,7 +3,6 @@ import { db, storage, auth } from './firebase-config.js';
 import {
   collection,
   addDoc,
-  getDocs,
   query,
   where,
   deleteDoc,
@@ -38,7 +37,7 @@ export async function createNewProject() {
     await addDoc(projectsCollection, {
       name,
       description,
-      userId: auth.currentUser.uid,
+      userId: auth.currentUser.uid, // Importante para las reglas
       createdAt: new Date(),
       models: {},
       status: 'active'
@@ -235,3 +234,10 @@ export function viewModel(modelUrl) {
   arViewer.style.display = 'block';
   document.getElementById('adminPanel').style.display = 'none';
 }
+
+// Hacer funciones accesibles globalmente para onclick en HTML
+window.showUploadModal = showUploadModal;
+window.deleteProject = deleteProject;
+window.uploadModel = uploadModel;
+window.closeUploadModal = closeUploadModal;
+window.deleteModel = deleteModel;
