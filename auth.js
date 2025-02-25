@@ -29,19 +29,29 @@ onAuthStateChanged(auth, (user) => {
 
 // Función de inicio de sesión
 export async function login() {
-    console.log('Intentando iniciar sesión...');
+    console.log('Función login ejecutada');
     
     try {
-        const email = document.getElementById('loginEmail').value || TEST_EMAIL;
-        const password = document.getElementById('loginPassword').value || TEST_PASSWORD;
+        // Obtener valores de los campos
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
         
-        console.log('Usando credenciales:', { email });
+        if (!emailInput || !passwordInput) {
+            console.error('No se encontraron los campos de login');
+            return;
+        }
         
+        const email = emailInput.value || TEST_EMAIL;
+        const password = passwordInput.value || TEST_PASSWORD;
+        
+        console.log('Intentando iniciar sesión con:', email);
+        
+        // Intentar login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log('Inicio de sesión exitoso:', userCredential.user.email);
+        console.log('Login exitoso:', userCredential.user.email);
         
     } catch (error) {
-        console.error('Error de autenticación:', error);
+        console.error('Error durante el login:', error);
         alert(`Error al iniciar sesión: ${error.message}`);
     }
 }
@@ -49,7 +59,6 @@ export async function login() {
 // Función de cierre de sesión
 export async function logout() {
     console.log('Intentando cerrar sesión...');
-    
     try {
         await signOut(auth);
         console.log('Sesión cerrada exitosamente');
@@ -61,15 +70,17 @@ export async function logout() {
 
 // Auto-login para desarrollo
 export async function autoLogin() {
-    console.log('Intentando auto-login...');
-    
-    if (!auth.currentUser) {
-        console.log('No hay usuario actual, intentando login automático');
-        await login();
-    } else {
-        console.log('Ya existe una sesión activa');
+    console.log('Iniciando proceso de auto-login');
+    try {
+        if (!auth.currentUser) {
+            console.log('No hay usuario activo, intentando login automático');
+            await login();
+        } else {
+            console.log('Ya existe una sesión activa:', auth.currentUser.email);
+        }
+    } catch (error) {
+        console.error('Error en auto-login:', error);
     }
 }
 
-// Llamar al auto-login cuando se carga la página (comentar en producción)
-window.addEventListener('load', autoLogin); 
+// Remover el event listener global ya que lo manejamos en el index.html 
