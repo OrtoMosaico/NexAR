@@ -23,7 +23,7 @@
             <h2>Iniciar Sesión</h2>
             <input type="email" id="loginEmail" placeholder="Email">
             <input type="password" id="loginPassword" placeholder="Contraseña">
-            <button onclick="login()">Iniciar Sesión</button>
+            <button id="loginButton">Iniciar Sesión</button>
         </div>
     </div>
 
@@ -66,5 +66,14 @@
             auto-rotate>
         </model-viewer>
     </div>
+
+    <script type="module">
+        import { login, autoLogin } from './js/auth.js';
+        window.login = login;
+        
+        document.getElementById('loginButton').addEventListener('click', login);
+        
+        autoLogin();
+    </script>
 </body>
 </html> 
