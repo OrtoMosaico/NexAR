@@ -1,3 +1,4 @@
+<!-- Ejemplo de index.html corregido -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,18 +9,7 @@
     <!-- Model Viewer -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     
-    <!-- Firebase CDN 
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.3.1/firebase-auth.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.3.1/firebase-storage.js"></script>
-    <script type="module" src="https://www.gstatic.com/firebasejs/11.3.1/firebase-analytics.js"></script>  -->
-    
-    <!-- Nuestros scripts -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="auth.js"></script>
-    <script type="module" src="project-management.js"></script>
-    <script type="module" src="ar-viewer.js"></script>
+    <!-- Eliminar Firebase CDN -->
     
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -36,30 +26,7 @@
 
     <!-- Panel de Administración -->
     <div id="adminPanel" style="display: none;">
-        <h2>Panel de Administración</h2>
-        
-        <!-- Formulario para crear nuevo proyecto -->
-        <div id="newProjectForm" class="project-form">
-            <h3>Crear Nuevo Proyecto</h3>
-            <input type="text" id="projectName" placeholder="Nombre del Proyecto">
-            <textarea id="projectDescription" placeholder="Descripción del Proyecto"></textarea>
-            <button onclick="createNewProject()">Crear Proyecto</button>
-        </div>
-
-        <!-- Lista de Proyectos -->
-        <div id="projectsList"></div>
-
-        <!-- Modal para subir modelos -->
-        <div id="uploadModelModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h3>Subir Nuevo Modelo</h3>
-                <input type="text" id="modelName" placeholder="Nombre del Modelo">
-                <textarea id="modelDescription" placeholder="Descripción del Modelo"></textarea>
-                <input type="file" id="modelFile" accept=".glb">
-                <button onclick="uploadModel()">Subir Modelo</button>
-                <button onclick="closeUploadModal()">Cancelar</button>
-            </div>
-        </div>
+        <!-- Contenido del panel -->
     </div>
 
     <!-- Visor AR -->
@@ -79,13 +46,16 @@
         </div>
     </div>
 
+    <!-- Nuestros scripts -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="project-management.js"></script>
+    <script type="module" src="ar-viewer.js"></script>
+    
     <script type="module">
         import { login, autoLogin } from './auth.js';
-        
-        // Hacer las funciones disponibles globalmente
         window.login = login;
         
-        // Agregar event listener cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
             const loginButton = document.getElementById('loginButton');
             if (loginButton) {
@@ -94,11 +64,9 @@
                     login();
                 });
             }
-            
-            // Intentar auto-login
             console.log('Iniciando auto-login...');
             autoLogin();
         });
     </script>
 </body>
-</html> 
+</html>
