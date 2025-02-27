@@ -146,20 +146,30 @@ export function hideNewProjectModal() {
   document.getElementById('newProjectModal').style.display = 'none';
 }
 
-// Función forzada para obtener la URL base correcta SIEMPRE
+// Función para obtener la URL base con switch entre desarrollo y producción
 function getGlobalBaseUrl() {
-  // URL de producción fija - Ahora correctamente configurada
-  const PRODUCTION_URL = "https://ortomosaico.github.io/NexAR"; // Sin barra final
+  // URL configurada con selector @ - formato: @URL_REAL
+  const URL_SWITCH = "@https://ortomosaico.github.io/NexAR/"; // Cambia a @https://ortomosaico.github.io/NexAR/ para producción
   
-  // Si estamos en producción, usar la URL de producción fija
-  if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
-    console.log('Usando URL de producción fija:', PRODUCTION_URL);
-    return PRODUCTION_URL;
+  // Verificar si es un switch configurado manualmente
+  if (URL_SWITCH.startsWith('@')) {
+    // Extraer la URL real después del @ y eliminar barra final si existe
+    const realUrl = URL_SWITCH.substring(1).replace(/\/$/, '');
+    console.log('Usando URL configurada manualmente:', realUrl);
+    return realUrl;
   }
   
-  // Si estamos en desarrollo local, usar el origen actual
-  console.log('Usando URL local:', window.location.origin);
-  return window.location.origin;
+  // Si no hay switch, usar detección automática
+  if (window.location.hostname.includes('github.io')) {
+    const githubUrl = 'https://ortomosaico.github.io/NexAR';
+    console.log('Detectado entorno GitHub Pages:', githubUrl);
+    return githubUrl;
+  }
+  
+  // En desarrollo local
+  const localUrl = window.location.origin;
+  console.log('Usando URL local:', localUrl);
+  return localUrl;
 }
 
 // Simplificar completamente la función viewModel para evitar problemas de URL
@@ -168,31 +178,30 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
     // Detectar si el usuario está en Android
     const isAndroid = /Android/i.test(navigator.userAgent);
     
-    // Generar URL relativa simple - siempre funciona en cualquier entorno
+    // Obtener URL base correcta del switch
+    const baseUrl = getGlobalBaseUrl();
+    console.log('URL base para AR:', baseUrl);
+    
+    // Determinar la URL para mostrar el modelo
     let arViewerUrl;
     
     if (shortUrl && shortUrl.includes('ar.html?')) {
-      // Limpiar la URL corta si tiene problemas
-      if (shortUrl.includes('github.io') && shortUrl.includes('localhost')) {
-        // Corregir URL mixta (eliminar la parte de GitHub)
-        const cleanUrl = shortUrl.substring(shortUrl.indexOf('http'));
-        arViewerUrl = cleanUrl;
-        console.log('URL corregida de mixta:', arViewerUrl);
+      // Si tenemos shortUrl, usarla con correcciones si es necesario
+      if (shortUrl.startsWith('/')) {
+        // Convertir relativa a absoluta
+        arViewerUrl = `${baseUrl}${shortUrl}`;
+      } else if (shortUrl.includes('localhost') || shortUrl.includes('127.0.0.1')) {
+        // Reemplazar localhost con la URL de producción
+        arViewerUrl = shortUrl.replace(/http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, baseUrl);
       } else {
-        // Usar URL corta directamente
         arViewerUrl = shortUrl;
       }
     } else if (projectId && modelId) {
-      // Usar ruta relativa simple que funciona en cualquier entorno
-      arViewerUrl = `/ar.html?id=${projectId}&model=${modelId}`;
-      
-      // Si estamos en desarrollo local, asegurarse de que la ruta sea correcta
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        arViewerUrl = `/ar.html?id=${projectId}&model=${modelId}`;
-      }
+      // Construir URL absoluta con parámetros
+      arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
     } else {
-      // Fallback para URL directa
-      arViewerUrl = `/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
+      // URL para visualización directa
+      arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
     
     console.log('URL final para AR:', arViewerUrl);
