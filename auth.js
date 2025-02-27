@@ -19,12 +19,12 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log('Usuario autenticado:', user.email);
     document.getElementById('authSection').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('mainApp').style.display = 'block';
     setupProjectsListener();
   } else {
     console.log('Usuario no autenticado');
     document.getElementById('authSection').style.display = 'block';
-    document.getElementById('adminPanel').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'none';
     document.getElementById('arViewer').style.display = 'none';
   }
 });

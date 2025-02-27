@@ -4,12 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="mobile-web-app-capable" content="yes">
   <title>Visor AR Web Interactivo</title>
 
-  <!-- Actualizar Model Viewer a la última versión -->
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-
+  <!-- Model Viewer - Asegurarnos de que se carga correctamente -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer@2.1.1/dist/model-viewer.min.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -19,102 +22,132 @@
       <h2>Iniciar Sesión</h2>
       <input type="email" id="loginEmail" placeholder="Email" />
       <input type="password" id="loginPassword" placeholder="Contraseña" />
-      <button id="loginButton">Iniciar Sesión</button>
+      <button id="loginButton" class="btn btn-primary">Iniciar Sesión</button>
     </div>
   </div>
 
-  <!-- Panel de Administración -->
-  <div id="adminPanel" style="display: none;">
-    <h2>Panel de Administración</h2>
-    
-    <!-- Formulario para crear nuevo proyecto -->
-    <div id="newProjectForm" class="project-form">
-      <h3>Crear Nuevo Proyecto</h3>
-      <input type="text" id="projectName" placeholder="Nombre del Proyecto" />
-      <textarea id="projectDescription" placeholder="Descripción del Proyecto"></textarea>
-      <!-- AQUÍ llamamos a la función con onclick -->
-      <button onclick="createNewProject()">Crear Proyecto</button>
+  <!-- Aplicación Principal (oculta hasta login) -->
+  <div id="mainApp" style="display: none;">
+    <header class="main-header">
+      <img src="logo.png" alt="Logo" class="logo">
+      <h1>Visor AR</h1>
+    </header>
+
+    <div class="main-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <button class="btn btn-primary" onclick="showNewProjectModal()">
+            <i class="fas fa-plus"></i>
+            Nuevo Proyecto
+          </button>
+        </div>
+        
+        <div class="projects-list" id="projectsList">
+          <!-- Los proyectos se listarán aquí -->
+        </div>
+
+        <button onclick="testViewer()" class="btn btn-secondary test-button">
+          Probar Visor AR
+        </button>
+      </aside>
+
+      <main class="content">
+        <div class="content-header">
+          <h2 id="currentProjectName">Selecciona un proyecto</h2>
+          <button id="addModelBtn" onclick="showUploadModal()" class="btn btn-primary" style="display: none;">
+            <i class="fas fa-plus"></i>
+            Añadir Modelo
+          </button>
+        </div>
+
+        <div class="models-grid" id="modelsList">
+          <!-- Los modelos se listarán aquí -->
+        </div>
+      </main>
     </div>
 
-    <!-- Lista de Proyectos -->
-    <div id="projectsList"></div>
+    <!-- Modales -->
+    <div id="newProjectModal" class="modal">
+      <div class="modal-content">
+        <h3>Crear Nuevo Proyecto</h3>
+        <input type="text" id="projectName" placeholder="Nombre del Proyecto" />
+        <textarea id="projectDescription" placeholder="Descripción del Proyecto"></textarea>
+        <div class="modal-actions">
+          <button onclick="createNewProject()" class="btn btn-primary">Crear</button>
+          <button onclick="hideNewProjectModal()" class="btn btn-secondary">Cancelar</button>
+        </div>
+      </div>
+    </div>
 
-    <!-- Modal para subir modelos -->
-    <div id="uploadModelModal" class="modal" style="display: none;">
+    <div id="uploadModelModal" class="modal">
       <div class="modal-content">
         <h3>Subir Nuevo Modelo</h3>
         <input type="text" id="modelName" placeholder="Nombre del Modelo" />
         <textarea id="modelDescription" placeholder="Descripción del Modelo"></textarea>
-        <input type="file" id="modelFile" accept=".glb" />
-        <button onclick="uploadModel()">Subir Modelo</button>
-        <button onclick="closeUploadModal()">Cancelar</button>
+        <input type="file" id="modelFile" accept=".glb" class="file-input" />
+        <div class="modal-actions">
+          <button onclick="uploadModel()" class="btn btn-primary">Subir</button>
+          <button onclick="closeUploadModal()" class="btn btn-secondary">Cancelar</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Visor AR -->
-  <div id="arViewer" style="display: none;">
-    <model-viewer
-      id="modelViewer"
-      camera-controls
-      ar
-      ar-modes="webxr scene-viewer quick-look"
-      ar-scale="auto"
-      interaction-prompt="auto"
-      auto-rotate
-      shadow-intensity="1"
-      shadow-softness="1"
-      exposure="1"
-      style="width: 100%; height: 80vh;"
-      ar-placement="floor"
-      quick-look-browsers="safari chrome"
-      environment-image="neutral"
-    >
-      <!-- Botón AR personalizado -->
-      <button slot="ar-button" 
-              id="ar-button"
-              style="background-color: white; border-radius: 4px; border: none; position: absolute; bottom: 16px; right: 16px; padding: 12px 24px; font-weight: 500;">
-          <img src="ar_icon.png" alt="AR" style="width: 20px; height: 20px; vertical-align: middle;"> 
-          Ver en AR
-      </button>
-
-      <!-- Fallback para dispositivos no compatibles -->
-      <div class="ar-prompt" slot="ar-prompt">
-          👆 Toca para ver en AR
-      </div>
-    </model-viewer>
-    <div class="ar-controls">
-      <button onclick="resetModelPosition()" class="btn-control">Resetear Posición</button>
-      <button onclick="toggleRotation()" class="btn-control">Alternar Rotación</button>
-      <button onclick="hideViewer()" class="btn-control btn-back">Volver</button>
-      <button onclick="decreaseScale()" class="btn-control">-</button>
-      <button onclick="increaseScale()" class="btn-control">+</button>
-    </div>
-  </div>
-
-  <!-- Nuestros scripts (en orden) -->
+  <!-- Scripts -->
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="project-management.js"></script>
-  <script type="module" src="ar-viewer.js"></script>
 
   <script type="module">
     import { login, autoLogin } from './auth.js';
-    // Hacer la función login disponible globalmente (opcional)
+    import { 
+        showNewProjectModal, 
+        hideNewProjectModal, 
+        showUploadModal, 
+        closeUploadModal,
+        createNewProject,
+        deleteProject,
+        uploadModel,
+        deleteModel,
+        viewModel,
+        hideViewer,
+        resetModelPosition,
+        toggleRotation,
+        decreaseScale,
+        increaseScale
+    } from './project-management.js';
+
+    // Hacer las funciones disponibles globalmente
     window.login = login;
+    window.showNewProjectModal = showNewProjectModal;
+    window.hideNewProjectModal = hideNewProjectModal;
+    window.showUploadModal = showUploadModal;
+    window.closeUploadModal = closeUploadModal;
+    window.createNewProject = createNewProject;
+    window.deleteProject = deleteProject;
+    window.uploadModel = uploadModel;
+    window.deleteModel = deleteModel;
+    window.viewModel = viewModel;
+    window.hideViewer = hideViewer;
+    window.resetModelPosition = resetModelPosition;
+    window.toggleRotation = toggleRotation;
+    window.decreaseScale = decreaseScale;
+    window.increaseScale = increaseScale;
 
+    // Inicialización cuando el DOM está listo
     document.addEventListener('DOMContentLoaded', () => {
-      const loginButton = document.getElementById('loginButton');
-      if (loginButton) {
-        loginButton.addEventListener('click', () => {
-          console.log('Botón de login clickeado');
-          login();
-        });
-      }
+        // Login
+        const loginButton = document.getElementById('loginButton');
+        if (loginButton) {
+            loginButton.addEventListener('click', () => {
+                console.log('Botón de login clickeado');
+                login();
+            });
+        }
 
-      // Intentar auto-login
-      console.log('Iniciando auto-login...');
-      autoLogin();
+        // Auto-login
+        console.log('Iniciando auto-login...');
+        autoLogin();
     });
   </script>
 </body>

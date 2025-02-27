@@ -117,6 +117,8 @@ export async function uploadModel() {
     // Subir archivo
     const snapshot = await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    console.log('URL del modelo:', downloadURL); // Debug
 
     // Actualizar documento del proyecto
     const projectRef = doc(db, 'projects', projectId);
@@ -167,78 +169,134 @@ export async function deleteModel(projectId, modelId) {
   }
 }
 
-// Crear elemento HTML para cada proyecto
+// Crear elemento HTML para cada proyecto en el sidebar
 function createProjectElement(projectId, project) {
   const div = document.createElement('div');
-  div.className = 'project-card';
+  div.className = 'project-item';
+  div.setAttribute('data-project-id', projectId);
   div.innerHTML = `
-    <div class="project-header">
-      <h3>${project.name}</h3>
-      <div class="project-actions">
-        <button onclick="showUploadModal('${projectId}')" class="btn-add">Añadir Modelo</button>
-        <button onclick="deleteProject('${projectId}')" class="btn-delete">Eliminar Proyecto</button>
-      </div>
+    <h3>${project.name}</h3>
+    <small>${new Date(project.createdAt.toDate()).toLocaleDateString()}</small>
+  `;
+  
+  div.addEventListener('click', () => selectProject(projectId, project));
+  return div;
+}
+
+// Función para seleccionar un proyecto
+function selectProject(projectId, project) {
+  // Actualizar UI
+  document.querySelectorAll('.project-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  document.querySelector(`[data-project-id="${projectId}"]`).classList.add('active');
+  
+  // Actualizar título y mostrar botón de añadir modelo
+  document.getElementById('currentProjectName').textContent = project.name;
+  document.getElementById('addModelBtn').style.display = 'block';
+  
+  // Mostrar modelos del proyecto
+  const modelsGrid = document.getElementById('modelsList');
+  modelsGrid.innerHTML = '';
+  
+  if (project.models) {
+    Object.entries(project.models).forEach(([modelId, model]) => {
+      const modelCard = createModelCard(modelId, model, projectId);
+      modelsGrid.appendChild(modelCard);
+    });
+  } else {
+    modelsGrid.innerHTML = '<p>No hay modelos en este proyecto</p>';
+  }
+}
+
+// Crear tarjeta de modelo
+function createModelCard(modelId, model, projectId) {
+  console.log('Creando tarjeta para modelo:', model); // Debug
+  
+  const div = document.createElement('div');
+  div.className = 'model-card';
+  div.innerHTML = `
+    <div class="model-preview">
+      <i class="fas fa-cube fa-3x"></i>
     </div>
-    <p class="project-description">${project.description}</p>
-    <div class="models-list">
-      ${createModelsListHTML(project.models, projectId)}
+    <div class="model-info">
+      <h4>${model.name}</h4>
+      <p>${model.description}</p>
+      <small>Subido: ${new Date(model.uploadedAt.toDate()).toLocaleDateString()}</small>
     </div>
-    <div class="project-footer">
-      <small>Creado: ${new Date(project.createdAt.toDate()).toLocaleDateString()}</small>
+    <div class="model-actions">
+      <button onclick="viewModel('${encodeURIComponent(model.url)}')" class="btn btn-primary">
+        <i class="fas fa-eye"></i> Ver en AR
+      </button>
+      <button onclick="deleteModel('${projectId}', '${modelId}')" class="btn btn-danger">
+        <i class="fas fa-trash"></i>
+      </button>
     </div>
   `;
   return div;
 }
 
-function createModelsListHTML(models, projectId) {
-  if (!models) return '<p>No hay modelos en este proyecto</p>';
-  
-  return Object.entries(models).map(([modelId, model]) => `
-    <div class="model-item">
-      <div class="model-header">
-        <h4>${model.name}</h4>
-        <span class="model-date">
-          ${new Date(model.uploadedAt.toDate()).toLocaleDateString()}
-        </span>
-      </div>
-      <p class="model-description">${model.description}</p>
-      <div class="model-actions">
-        <button onclick="viewModel('${model.url}')" class="btn-view">Ver en AR</button>
-        <button onclick="deleteModel('${projectId}', '${modelId}')" class="btn-delete">Eliminar</button>
-      </div>
-    </div>
-  `).join('');
+// Funciones para el modal de nuevo proyecto
+export function showNewProjectModal() {
+    document.getElementById('newProjectModal').style.display = 'block';
 }
 
-// Mostrar modal de subida
-export function showUploadModal(projectId) {
-  const modal = document.getElementById('uploadModelModal');
-  modal.style.display = 'block';
-  modal.dataset.projectId = projectId;
+export function hideNewProjectModal() {
+    document.getElementById('newProjectModal').style.display = 'none';
+    document.getElementById('projectName').value = '';
+    document.getElementById('projectDescription').value = '';
 }
 
-// Cerrar modal de subida
+// Funciones para el modal de subida de modelos
+export function showUploadModal() {
+    const currentProject = document.querySelector('.project-item.active');
+    if (!currentProject) {
+        alert('Por favor, selecciona un proyecto primero');
+        return;
+    }
+    
+    const modal = document.getElementById('uploadModelModal');
+    modal.style.display = 'block';
+    modal.dataset.projectId = currentProject.getAttribute('data-project-id');
+}
+
 export function closeUploadModal() {
-  document.getElementById('uploadModelModal').style.display = 'none';
-  document.getElementById('modelFile').value = '';
-  document.getElementById('modelName').value = '';
-  document.getElementById('modelDescription').value = '';
+    document.getElementById('uploadModelModal').style.display = 'none';
+    document.getElementById('modelFile').value = '';
+    document.getElementById('modelName').value = '';
+    document.getElementById('modelDescription').value = '';
 }
 
-// Ver modelo en AR
+// Función para ver modelo en AR (abre en una nueva ventana)
 export function viewModel(modelUrl) {
-  const modelViewer = document.getElementById('modelViewer');
-  const arViewer = document.getElementById('arViewer');
-  
-  modelViewer.src = modelUrl;
-  arViewer.style.display = 'block';
-  document.getElementById('adminPanel').style.display = 'none';
+  try {
+    console.log('Abriendo visor AR con modelo:', modelUrl);
+    
+    // Crear URL con parámetros
+    const url = `ar-viewer.html?url=${encodeURIComponent(modelUrl)}`;
+    
+    // Abrir en una nueva ventana/pestaña
+    window.open(url, '_blank');
+    
+  } catch (error) {
+    console.error('Error al abrir el visor AR:', error);
+    alert('Error al abrir el visor AR: ' + error.message);
+  }
 }
 
-// EXponer funciones globalmente para que onclick="..." en el HTML funcione
+// Función para probar el visor AR con un modelo de ejemplo
+export function testViewer() {
+  window.open('ar-viewer.html', '_blank');
+}
+
+// Hacer TODAS las funciones disponibles globalmente
 window.createNewProject = createNewProject;
-window.showUploadModal = showUploadModal;
 window.deleteProject = deleteProject;
 window.uploadModel = uploadModel;
-window.closeUploadModal = closeUploadModal;
 window.deleteModel = deleteModel;
+window.showNewProjectModal = showNewProjectModal;
+window.hideNewProjectModal = hideNewProjectModal;
+window.showUploadModal = showUploadModal;
+window.closeUploadModal = closeUploadModal;
+window.viewModel = viewModel;
+window.testViewer = testViewer;
