@@ -162,42 +162,44 @@ function getGlobalBaseUrl() {
   return window.location.origin;
 }
 
-// Función mejorada para ver modelo en AR, con mejor compatibilidad Android
+// Simplificar completamente la función viewModel para evitar problemas de URL
 export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
   try {
     // Detectar si el usuario está en Android
     const isAndroid = /Android/i.test(navigator.userAgent);
     
-    // SOLUCIÓN CORREGIDA - USAR LA URL DE PRODUCCIÓN REAL
-    const baseUrl = "https://ortomosaico.github.io/NexAR"; // URL correcta
-    console.log('Forzando URL base para AR:', baseUrl);
-    
-    // Determinar la URL para mostrar el modelo
+    // Generar URL relativa simple - siempre funciona en cualquier entorno
     let arViewerUrl;
     
-    if (shortUrl && shortUrl.includes('/ar.html?')) {
-      // Asegurarse que la URL corta use el dominio correcto
-      if (shortUrl.startsWith('/')) {
-        arViewerUrl = `${baseUrl}${shortUrl}`;
+    if (shortUrl && shortUrl.includes('ar.html?')) {
+      // Limpiar la URL corta si tiene problemas
+      if (shortUrl.includes('github.io') && shortUrl.includes('localhost')) {
+        // Corregir URL mixta (eliminar la parte de GitHub)
+        const cleanUrl = shortUrl.substring(shortUrl.indexOf('http'));
+        arViewerUrl = cleanUrl;
+        console.log('URL corregida de mixta:', arViewerUrl);
       } else {
-        arViewerUrl = shortUrl.replace("http://localhost:8080", baseUrl)
-                             .replace("http://127.0.0.1:8080", baseUrl);
+        // Usar URL corta directamente
+        arViewerUrl = shortUrl;
       }
     } else if (projectId && modelId) {
-      arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
+      // Usar ruta relativa simple que funciona en cualquier entorno
+      arViewerUrl = `/ar.html?id=${projectId}&model=${modelId}`;
+      
+      // Si estamos en desarrollo local, asegurarse de que la ruta sea correcta
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        arViewerUrl = `/ar.html?id=${projectId}&model=${modelId}`;
+      }
     } else {
-      arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
+      // Fallback para URL directa
+      arViewerUrl = `/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
     
     console.log('URL final para AR:', arViewerUrl);
     
-    // Registrar información para depurar
-    console.log(`Abriendo modelo en AR - URL: ${arViewerUrl}`);
-    console.log(`Plataforma: ${isAndroid ? 'Android' : 'Otro'}`);
-
     // En Android, mostrar instrucciones específicas primero
     if (isAndroid) {
-      // Crear modal de instrucciones para Android
+      // Mostrar modal de Android
       const androidHelp = document.createElement('div');
       androidHelp.className = 'modal android-help-modal';
       androidHelp.style.display = 'block';
@@ -217,28 +219,11 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
         </div>
       `;
       
-      // Agregar modal al documento
       document.body.appendChild(androidHelp);
       
-      // Configurar eventos de los botones
       document.getElementById('continueToAr').addEventListener('click', () => {
         document.body.removeChild(androidHelp);
-        
-        // Intentar con Scene Viewer para Android
-        try {
-          // Usar Scene Viewer si estamos en Android - cambia el formato de URL para compatibilidad
-          if (modelUrl.toLowerCase().endsWith('.glb')) {
-            const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_only#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(arViewerUrl)};end;`;
-            window.location.href = sceneViewerUrl;
-          } else {
-            // Si no es un archivo GLB, usar la URL estándar
-            window.open(arViewerUrl, '_blank');
-          }
-        } catch (err) {
-          console.error('Error al abrir Scene Viewer:', err);
-          // Fallback
-          window.open(arViewerUrl, '_blank');
-        }
+        window.open(arViewerUrl, '_blank');
       });
       
       document.getElementById('cancelAr').addEventListener('click', () => {
@@ -251,11 +236,6 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
   } catch (error) {
     console.error('Error al abrir el visor AR:', error);
     alert('Hubo un problema al abrir el visor AR. Por favor, intenta de nuevo.');
-    
-    // Fallback final: abrir la URL directamente
-    if (modelUrl) {
-      window.open(modelUrl, '_blank');
-    }
   }
 }
 
