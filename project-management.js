@@ -152,19 +152,24 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
     // Detectar si el usuario está en Android
     const isAndroid = /Android/i.test(navigator.userAgent);
     
+    // Obtener la URL base correcta
+    const baseUrl = getGlobalBaseUrl();
+    console.log('URL base para AR:', baseUrl);
+    
     // Determinar la URL para mostrar el modelo
     let arViewerUrl;
     
     if (shortUrl && shortUrl.includes('/ar.html?')) {
-      // Si hay URL corta, usarla directamente
-      arViewerUrl = shortUrl;
+      // Asegurarse que la URL corta use el dominio correcto
+      if (shortUrl.startsWith('/')) {
+        // Si es una ruta relativa, convertirla a absoluta
+        arViewerUrl = `${baseUrl}${shortUrl}`;
+      } else {
+        arViewerUrl = shortUrl;
+      }
     } else if (projectId && modelId) {
-      // Si tenemos IDs pero no URL corta, generar URL
-      const baseUrl = getGlobalBaseUrl();
       arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
     } else {
-      // Fallback - usar la URL directa
-      const baseUrl = getGlobalBaseUrl();
       arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
     
@@ -340,16 +345,25 @@ export async function uploadModel() {
   }
 }
 
-// Función mejorada para obtener la URL base correcta
+// Función mejorada para obtener la URL base correcta del sitio
 function getGlobalBaseUrl() {
-  // Detectar GitHub Pages
-  if (window.location.hostname.includes('github.io')) {
-    const repoName = window.location.pathname.split('/')[1]; // Obtener el nombre del repositorio
-    return `https://${window.location.hostname}/${repoName}`;
-  }
+  // Obtener la URL actual
+  const currentUrl = window.location.href;
   
-  // Para desarrollo local o cualquier otro entorno
-  return window.location.origin;
+  // Extraer el protocolo y dominio
+  const urlObj = new URL(currentUrl);
+  const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+  
+  console.log('URL base detectada:', baseUrl);
+  
+  // Si es localhost y estamos en desarrollo, usar localhost
+  // De lo contrario, usar la URL de producción
+  if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+    return baseUrl;
+  } else {
+    // URL de producción
+    return baseUrl;
+  }
 }
 
 // Función mejorada para eliminar un modelo
