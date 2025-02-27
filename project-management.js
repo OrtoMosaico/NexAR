@@ -148,8 +148,8 @@ export function hideNewProjectModal() {
 
 // Función forzada para obtener la URL base correcta SIEMPRE
 function getGlobalBaseUrl() {
-  // URL de producción fija - REEMPLAZA ESTO CON TU URL DE PRODUCCIÓN REAL
-  const PRODUCTION_URL = "https://ortomosaico.github.io/NexAR/"; // <-- CAMBIA ESTO
+  // URL de producción fija - Ahora correctamente configurada
+  const PRODUCTION_URL = "https://ortomosaico.github.io/NexAR"; // Sin barra final
   
   // Si estamos en producción, usar la URL de producción fija
   if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
@@ -168,8 +168,8 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
     // Detectar si el usuario está en Android
     const isAndroid = /Android/i.test(navigator.userAgent);
     
-    // SOLUCIÓN TEMPORAL - FORZAR URL DE PRODUCCIÓN
-    const baseUrl = "https://tudominio.com"; // <-- CAMBIA ESTO A TU URL
+    // SOLUCIÓN CORREGIDA - USAR LA URL DE PRODUCCIÓN REAL
+    const baseUrl = "https://ortomosaico.github.io/NexAR"; // URL correcta
     console.log('Forzando URL base para AR:', baseUrl);
     
     // Determinar la URL para mostrar el modelo
