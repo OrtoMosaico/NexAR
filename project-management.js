@@ -146,21 +146,93 @@ export function hideNewProjectModal() {
   document.getElementById('newProjectModal').style.display = 'none';
 }
 
-// Función para ver modelo en AR
+// Función mejorada para ver modelo en AR, con mejor compatibilidad Android
 export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
-  if (shortUrl && shortUrl.includes('/ar.html?')) {
-    // Si hay URL corta, usarla directamente
-    window.open(shortUrl, '_blank');
-  } else if (projectId && modelId) {
-    // Si tenemos IDs pero no URL corta, generar URL
-    const baseUrl = getGlobalBaseUrl();
-    const arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
-    window.open(arViewerUrl, '_blank');
-  } else {
-    // Fallback - usar la URL directa
-    const baseUrl = getGlobalBaseUrl();
-    const arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
-    window.open(arViewerUrl, '_blank');
+  try {
+    // Detectar si el usuario está en Android
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    // Determinar la URL para mostrar el modelo
+    let arViewerUrl;
+    
+    if (shortUrl && shortUrl.includes('/ar.html?')) {
+      // Si hay URL corta, usarla directamente
+      arViewerUrl = shortUrl;
+    } else if (projectId && modelId) {
+      // Si tenemos IDs pero no URL corta, generar URL
+      const baseUrl = getGlobalBaseUrl();
+      arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
+    } else {
+      // Fallback - usar la URL directa
+      const baseUrl = getGlobalBaseUrl();
+      arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
+    }
+    
+    // Registrar información para depurar
+    console.log(`Abriendo modelo en AR - URL: ${arViewerUrl}`);
+    console.log(`Plataforma: ${isAndroid ? 'Android' : 'Otro'}`);
+
+    // En Android, mostrar instrucciones específicas primero
+    if (isAndroid) {
+      // Crear modal de instrucciones para Android
+      const androidHelp = document.createElement('div');
+      androidHelp.className = 'modal android-help-modal';
+      androidHelp.style.display = 'block';
+      androidHelp.innerHTML = `
+        <div class="modal-content">
+          <h3>Ver en Realidad Aumentada</h3>
+          <p>Para ver este modelo en AR desde Android:</p>
+          <ol>
+            <li>Asegúrate de tener instalada una aplicación compatible con WebXR como <strong>Google Scene Viewer</strong>.</li>
+            <li>Si la visualización no funciona automáticamente, intenta abrir el enlace en Google Chrome.</li>
+            <li>Los dispositivos Android necesitan ser compatibles con ARCore para la visualización en AR.</li>
+          </ol>
+          <div class="modal-actions">
+            <button id="continueToAr" class="btn btn-primary">Continuar a AR</button>
+            <button id="cancelAr" class="btn btn-secondary">Cancelar</button>
+          </div>
+        </div>
+      `;
+      
+      // Agregar modal al documento
+      document.body.appendChild(androidHelp);
+      
+      // Configurar eventos de los botones
+      document.getElementById('continueToAr').addEventListener('click', () => {
+        document.body.removeChild(androidHelp);
+        
+        // Intentar con Scene Viewer para Android
+        try {
+          // Usar Scene Viewer si estamos en Android - cambia el formato de URL para compatibilidad
+          if (modelUrl.toLowerCase().endsWith('.glb')) {
+            const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_only#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(arViewerUrl)};end;`;
+            window.location.href = sceneViewerUrl;
+          } else {
+            // Si no es un archivo GLB, usar la URL estándar
+            window.open(arViewerUrl, '_blank');
+          }
+        } catch (err) {
+          console.error('Error al abrir Scene Viewer:', err);
+          // Fallback
+          window.open(arViewerUrl, '_blank');
+        }
+      });
+      
+      document.getElementById('cancelAr').addEventListener('click', () => {
+        document.body.removeChild(androidHelp);
+      });
+    } else {
+      // En iOS y otros dispositivos, abrir directamente
+      window.open(arViewerUrl, '_blank');
+    }
+  } catch (error) {
+    console.error('Error al abrir el visor AR:', error);
+    alert('Hubo un problema al abrir el visor AR. Por favor, intenta de nuevo.');
+    
+    // Fallback final: abrir la URL directamente
+    if (modelUrl) {
+      window.open(modelUrl, '_blank');
+    }
   }
 }
 
@@ -280,28 +352,64 @@ function getGlobalBaseUrl() {
   return window.location.origin;
 }
 
-// Eliminar modelo
+// Función mejorada para eliminar un modelo
 export async function deleteModel(projectId, modelId) {
   if (!confirm('¿Estás seguro de que deseas eliminar este modelo?')) return;
-
+  
   try {
     const projectRef = doc(db, 'projects', projectId);
     const projectSnap = await getDoc(projectRef);
     const projectData = projectSnap.data();
-    const modelData = projectData.models[modelId];
-
-    // Eliminar archivo del storage
-    if (modelData.storageRef) {
-      const storageReference = ref(storage, modelData.storageRef);
-      await deleteObject(storageReference);
+    
+    if (!projectData.models || !projectData.models[modelId]) {
+      throw new Error('Modelo no encontrado');
     }
-
-    // Eliminar la referencia del modelo en Firestore
-    await updateDoc(projectRef, {
-      [`models.${modelId}`]: deleteField()
-    });
-
-    alert('Modelo eliminado exitosamente');
+    
+    // Obtener la referencia al archivo en Storage
+    const modelData = projectData.models[modelId];
+    const storageRefPath = modelData.storageRef;
+    
+    // Eliminar el archivo de Storage
+    if (storageRefPath) {
+      const fileRef = ref(storage, storageRefPath);
+      try {
+        await deleteObject(fileRef);
+        console.log('Archivo eliminado de Storage');
+      } catch (storageError) {
+        console.warn('Error al eliminar archivo de Storage:', storageError);
+        // Continuar con la eliminación del modelo aunque haya error en Storage
+      }
+    }
+    
+    // Eliminar el modelo del documento del proyecto
+    const updates = {};
+    updates[`models.${modelId}`] = deleteField();
+    await updateDoc(projectRef, updates);
+    
+    console.log('Modelo eliminado exitosamente');
+    
+    // MEJORA: Actualizar la interfaz inmediatamente
+    const modelElement = document.querySelector(`[data-model-id="${modelId}"]`);
+    if (modelElement) {
+      // Efecto de desvanecimiento
+      modelElement.style.transition = 'opacity 0.3s ease';
+      modelElement.style.opacity = '0';
+      
+      // Eliminar el elemento del DOM después de la animación
+      setTimeout(() => {
+        modelElement.remove();
+        
+        // Verificar si no hay más modelos y mostrar mensaje
+        const modelsList = document.getElementById('modelsList');
+        if (modelsList && modelsList.children.length === 0) {
+          modelsList.innerHTML = '<div class="no-models-message">No hay modelos en este proyecto. ¡Agrega uno!</div>';
+        }
+      }, 300);
+    } else {
+      // Si no encontramos el elemento, recargamos toda la lista
+      loadModels(projectId);
+    }
+    
   } catch (error) {
     console.error('Error al eliminar modelo:', error);
     alert('Error al eliminar el modelo: ' + error.message);
@@ -692,6 +800,7 @@ export function initializeApp() {
   console.log('Inicializando aplicación...');
   setupProjectsListener();
   setupMobileMenu();
+  removeTestButton();
 }
 
 // Función simplificada para configurar el menú móvil
@@ -728,6 +837,16 @@ export function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
   if (sidebar) {
     sidebar.classList.remove('sidebar-visible');
+  }
+}
+
+// Función para ocultar el botón "Probar Visor AR" de la barra lateral
+export function removeTestButton() {
+  // Buscar y eliminar el botón de prueba
+  const testButton = document.querySelector('.sidebar a[href="v.html"], .sidebar button:contains("Probar"), .sidebar a:contains("Probar")');
+  if (testButton) {
+    testButton.style.display = 'none';
+    console.log('Botón de prueba ocultado');
   }
 }
 

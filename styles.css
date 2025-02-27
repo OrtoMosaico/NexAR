@@ -1340,3 +1340,26 @@
     }
   }
   
+  /* Ocultar botón de prueba en la barra lateral */
+  .sidebar a[href="v.html"], 
+  .sidebar .test-button, 
+  .sidebar button:contains("Probar"), 
+  .sidebar a:contains("Probar") {
+    display: none !important;
+  }
+  
+  /* Ocultar cualquier botón con el texto "Probar Visor AR" */
+  button:contains("Probar Visor AR"), 
+  a:contains("Probar Visor AR"),
+  .test-button {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    z-index: -9999 !important;
+  }
+  

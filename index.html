@@ -51,10 +51,6 @@
         <div class="projects-list" id="projectsList">
           <!-- Los proyectos se listarán aquí -->
         </div>
-
-        <button onclick="testViewer()" class="btn btn-secondary test-button">
-          Probar Visor AR
-        </button>
       </aside>
 
       <main class="content">
@@ -216,6 +212,20 @@
         
         // Inicializar aplicación de inmediato
         initializeApp();
+    });
+
+    // Encontrar y eliminar completamente el botón de prueba
+    document.addEventListener('DOMContentLoaded', function() {
+      // Eliminar cualquier botón con el texto "Probar Visor AR"
+      setTimeout(function() {
+        const buttons = document.querySelectorAll('button, a');
+        buttons.forEach(button => {
+          if (button.textContent.includes('Probar Visor AR')) {
+            button.parentNode.removeChild(button);
+            console.log('Botón "Probar Visor AR" eliminado');
+          }
+        });
+      }, 500);
     });
   </script>
 </body>
