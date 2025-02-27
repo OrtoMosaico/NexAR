@@ -7,154 +7,156 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>Visor AR</title>
   
-  <!-- Model Viewer -->
+  <!-- Model Viewer - Importamos el componente -->
   <script type="module" src="https://unpkg.com/@google/model-viewer@2.1.1/dist/model-viewer.min.js"></script>
   
-  <!-- Font Awesome -->
+  <!-- Font Awesome para iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <style>
-    body, html {
+    body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
-    .header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 56px;
-      background: white;
+    header {
+      background-color: #f8f9fa;
+      padding: 12px;
       display: flex;
       align-items: center;
-      padding: 0 16px;
+      gap: 12px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      z-index: 100;
     }
     
-    .btn-back {
-      background: #f44336;
-      color: white;
+    .back-button {
+      background: none;
       border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
       cursor: pointer;
-      font-weight: 500;
+      font-size: 16px;
+      color: #0d6efd;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     
-    .model-title {
-      margin-left: 16px;
+    .model-name {
       font-size: 18px;
-      font-weight: 500;
+      font-weight: bold;
+      flex-grow: 1;
+      margin: 0;
     }
     
     model-viewer {
       width: 100%;
-      height: calc(100vh - 56px);
-      margin-top: 56px;
-      background-color: #f5f5f5;
+      height: calc(100vh - 60px);
+      background-color: #f0f0f0;
+    }
+    
+    .ar-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      display: none;
+      z-index: 10;
+    }
+    
+    .error-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #f8d7da;
+      color: #842029;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      display: none;
+      z-index: 20;
+      max-width: 80%;
+      text-align: center;
     }
     
     .controls {
       position: fixed;
       bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      right: 20px;
       display: flex;
+      flex-direction: column;
       gap: 10px;
-      background: rgba(255,255,255,0.8);
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 10;
     }
     
-    .btn-control {
-      width: 40px;
-      height: 40px;
+    .control-button {
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
+      background-color: white;
       border: none;
-      background: white;
-      color: #333;
-      font-size: 16px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <button class="btn-back" onclick="window.close()">
+  <header>
+    <button id="backButton" class="back-button">
       <i class="fas fa-arrow-left"></i> Volver
     </button>
-    <h2 class="model-title" id="modelTitle">Modelo 3D</h2>
-  </div>
+    <h1 id="modelName" class="model-name">Cargando modelo...</h1>
+  </header>
   
   <model-viewer
-    id="modelViewer"
+    id="viewer"
     camera-controls
+    auto-rotate
     ar
     ar-modes="webxr scene-viewer quick-look"
     shadow-intensity="1"
-    auto-rotate>
+    alt="Modelo 3D"
+    seamless-poster
+    environment-image="neutral"
+    exposure="1">
   </model-viewer>
   
+  <div id="arPrompt" class="ar-prompt">
+    Presiona el botón AR para ver el modelo en realidad aumentada
+  </div>
+  
+  <div id="errorMessage" class="error-message">
+    Error al cargar el modelo
+  </div>
+  
   <div class="controls">
-    <button class="btn-control" onclick="resetView()">
+    <button class="control-button" onclick="document.querySelector('model-viewer').toggleAttribute('auto-rotate')">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+    <button class="control-button" onclick="resetCamera()">
       <i class="fas fa-home"></i>
-    </button>
-    <button class="btn-control" onclick="decreaseScale()">
-      <i class="fas fa-search-minus"></i>
-    </button>
-    <button class="btn-control" onclick="increaseScale()">
-      <i class="fas fa-search-plus"></i>
     </button>
   </div>
   
   <script>
-    // Obtener parámetros de la URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const modelUrl = urlParams.get('url');
-    const modelName = urlParams.get('name') || 'Modelo 3D';
-    
-    // Configurar el visor
-    const modelViewer = document.getElementById('modelViewer');
-    document.getElementById('modelTitle').textContent = modelName;
-    
-    // Cargar el modelo si hay URL
-    if (modelUrl) {
-      modelViewer.src = decodeURIComponent(modelUrl);
-      console.log('Cargando modelo:', decodeURIComponent(modelUrl));
-    } else {
-      // Modelo de prueba si no hay URL
-      modelViewer.src = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
-      console.log('Cargando modelo de prueba');
-    }
-    
-    // Funciones de control
-    function resetView() {
-      console.log('Reseteando vista');
-      modelViewer.cameraOrbit = 'auto auto auto';
-      modelViewer.cameraTarget = 'auto auto auto';
-      modelViewer.fieldOfView = 'auto';
-    }
-    
-    function decreaseScale() {
-      console.log('Disminuyendo escala');
-      const currentScale = parseFloat(modelViewer.scale || '1') || 1;
-      const newScale = Math.max(0.1, currentScale * 0.8);
-      modelViewer.scale = `${newScale} ${newScale} ${newScale}`;
-    }
-    
-    function increaseScale() {
-      console.log('Aumentando escala');
-      const currentScale = parseFloat(modelViewer.scale || '1') || 1;
-      const newScale = Math.min(10, currentScale * 1.2);
-      modelViewer.scale = `${newScale} ${newScale} ${newScale}`;
+    function resetCamera() {
+      const viewer = document.querySelector('model-viewer');
+      viewer.cameraOrbit = '0deg 75deg 105%';
+      viewer.fieldOfView = '30deg';
     }
   </script>
+  
+  <script type="module" src="ar-viewer.js"></script>
 </body>
 </html> 

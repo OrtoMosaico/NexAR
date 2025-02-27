@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Depuración de Modelo 3D</title>
+  
+  <script type="module" src="https://unpkg.com/@google/model-viewer@2.1.1/dist/model-viewer.min.js"></script>
+  
+  <style>
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+    .container { max-width: 800px; margin: 0 auto; }
+    model-viewer { width: 100%; height: 400px; background-color: #f0f0f0; }
+    .control-panel { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+    input { width: 100%; padding: 8px; margin-bottom: 10px; }
+    button { padding: 8px 16px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    #status { margin-top: 10px; padding: 10px; border-radius: 4px; }
+    .success { background: #d1e7dd; color: #0f5132; }
+    .error { background: #f8d7da; color: #842029; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Depuración de Modelo 3D</h1>
+    
+    <model-viewer
+      id="viewer"
+      camera-controls
+      auto-rotate
+      ar
+      ar-modes="webxr scene-viewer quick-look"
+      shadow-intensity="1"
+      alt="Modelo 3D"
+      seamless-poster
+      environment-image="neutral"
+      exposure="1">
+    </model-viewer>
+    
+    <div class="control-panel">
+      <h3>Cargar Modelo Directamente</h3>
+      <input type="text" id="modelUrl" placeholder="URL del modelo (https://...)">
+      <button id="loadButton">Cargar Modelo</button>
+      
+      <div id="status"></div>
+    </div>
+  </div>
+  
+  <script>
+    document.getElementById('loadButton').addEventListener('click', () => {
+      const url = document.getElementById('modelUrl').value;
+      const status = document.getElementById('status');
+      const viewer = document.getElementById('viewer');
+      
+      if (!url) {
+        status.className = 'error';
+        status.textContent = 'Por favor, ingresa una URL';
+        return;
+      }
+      
+      try {
+        viewer.src = url;
+        status.className = 'success';
+        status.textContent = 'Modelo cargado. Si no ves el modelo, verifica la consola para errores.';
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = `Error: ${error.message}`;
+        console.error('Error al cargar modelo:', error);
+      }
+    });
+    
+    // Obtener parámetros de URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFromParam = urlParams.get('url');
+    
+    if (urlFromParam) {
+      document.getElementById('modelUrl').value = urlFromParam;
+      document.getElementById('loadButton').click();
+    }
+  </script>
+</body>
+</html> 

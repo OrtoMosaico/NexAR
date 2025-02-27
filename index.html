@@ -14,6 +14,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- QR Code Library -->
+  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 </head>
 <body>
   <!-- Sección de Autenticación -->
@@ -29,6 +32,9 @@
   <!-- Aplicación Principal (oculta hasta login) -->
   <div id="mainApp" style="display: none;">
     <header class="main-header">
+      <button class="menu-toggle" id="menuToggle" style="display: none;">
+        <i class="fas fa-bars"></i>
+      </button>
       <img src="logo.png" alt="Logo" class="logo">
       <h1>Visor AR</h1>
     </header>
@@ -91,6 +97,36 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal para editar proyecto -->
+    <div id="editProjectModal" class="modal">
+      <div class="modal-content">
+        <h3>Editar Proyecto</h3>
+        <input type="text" id="editProjectName" placeholder="Nombre del Proyecto" />
+        <textarea id="editProjectDescription" placeholder="Descripción del Proyecto"></textarea>
+        <div class="modal-actions">
+          <button onclick="updateProject()" class="btn btn-primary">Guardar</button>
+          <button onclick="hideEditProjectModal()" class="btn btn-secondary">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Añadir después del modal de editar proyecto -->
+    <div id="qrModal" class="modal">
+      <div class="modal-content">
+        <h3>Código QR para acceso directo</h3>
+        <div class="qr-container">
+          <div id="qrCode"></div>
+        </div>
+        <p id="qrUrl" class="qr-url"></p>
+        <div class="modal-actions">
+          <button onclick="downloadQR()" class="btn btn-primary">
+            <i class="fas fa-download"></i> Descargar QR
+          </button>
+          <button onclick="hideQRModal()" class="btn btn-secondary">Cerrar</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
@@ -110,11 +146,9 @@
         uploadModel,
         deleteModel,
         viewModel,
-        hideViewer,
-        resetModelPosition,
-        toggleRotation,
-        decreaseScale,
-        increaseScale
+        testViewer,
+        setupMobileMenu,
+        initializeApp
     } from './project-management.js';
 
     // Hacer las funciones disponibles globalmente
@@ -128,11 +162,7 @@
     window.uploadModel = uploadModel;
     window.deleteModel = deleteModel;
     window.viewModel = viewModel;
-    window.hideViewer = hideViewer;
-    window.resetModelPosition = resetModelPosition;
-    window.toggleRotation = toggleRotation;
-    window.decreaseScale = decreaseScale;
-    window.increaseScale = increaseScale;
+    window.testViewer = testViewer;
 
     // Inicialización cuando el DOM está listo
     document.addEventListener('DOMContentLoaded', () => {
@@ -148,6 +178,9 @@
         // Auto-login
         console.log('Iniciando auto-login...');
         autoLogin();
+        
+        // Inicializar aplicación
+        initializeApp();
     });
   </script>
 </body>

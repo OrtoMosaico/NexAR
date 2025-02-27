@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Visor AR</title>
+  
+  <script type="module" src="https://unpkg.com/@google/model-viewer@2.1.1/dist/model-viewer.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  
+  <style>
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    model-viewer { width: 100vw; height: 100vh; }
+    #loading { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.9); z-index: 100; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
+    #error { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f8d7da; color: #721c24; padding: 15px 20px; border-radius: 4px; display: none; z-index: 200; max-width: 80%; text-align: center; }
+    .header { position: fixed; top: 0; left: 0; right: 0; display: flex; padding: 10px; background: rgba(255,255,255,0.8); z-index: 50; }
+    .back-btn { border: none; background: none; font-size: 20px; cursor: pointer; }
+    .prompt { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: white; padding: 10px 15px; border-radius: 20px; z-index: 50; font-size: 14px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Cargando modelo...</div>
+  </div>
+  
+  <div class="header">
+    <button class="back-btn" onclick="history.back()">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <h3 id="modelName" style="margin: 0 0 0 10px; flex-grow: 1;">Visor AR</h3>
+  </div>
+  
+  <model-viewer 
+    id="viewer"
+    camera-controls
+    auto-rotate
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    shadow-intensity="1"
+    seamless-poster
+    environment-image="neutral">
+  </model-viewer>
+  
+  <div id="error">Error al cargar el modelo</div>
+  
+  <div class="prompt" id="prompt">
+    Presiona el botón AR para ver el modelo en realidad aumentada
+  </div>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // Configuración de Firebase (mantiene la misma que usas actualmente)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBKzibLWo4MNweXiwr6QoudB9sFb7CeH2w",
+      authDomain: "prueba-2-dc1d2.firebaseapp.com",
+      projectId: "prueba-2-dc1d2",
+      storageBucket: "prueba-2-dc1d2.appspot.com",
+      messagingSenderId: "603232032392",
+      appId: "1:603232032392:web:575f16d8e613348399313d"
+    };
+
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    // Elementos DOM
+    const viewer = document.getElementById('viewer');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const modelNameElement = document.getElementById('modelName');
+    const prompt = document.getElementById('prompt');
+    
+    // Obtener hash de la URL 
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = urlParams.get('h');
+    
+    if (!hash) {
+      showError("Error: Enlace inválido");
+      showDemoModel();
+    } else {
+      findModelByHash(hash);
+    }
+    
+    // Buscar modelo por hash
+    async function findModelByHash(hash) {
+      try {
+        const projectsRef = collection(db, 'projects');
+        const snapshot = await getDocs(projectsRef);
+        
+        let modelFound = false;
+        
+        // Buscar en todos los proyectos
+        for (const doc of snapshot.docs) {
+          const project = doc.data();
+          if (project.models) {
+            // Buscar en los modelos del proyecto
+            for (const modelId in project.models) {
+              const model = project.models[modelId];
+              if (model.hash === hash) {
+                // Modelo encontrado, cargarlo
+                loadModel(model.url, model.name);
+                modelFound = true;
+                break;
+              }
+            }
+          }
+          if (modelFound) break;
+        }
+        
+        if (!modelFound) {
+          showError("Modelo no encontrado");
+          showDemoModel();
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        showError("Error: " + error.message);
+        showDemoModel();
+      }
+    }
+    
+    // Cargar modelo
+    function loadModel(url, name) {
+      modelNameElement.textContent = name;
+      document.title = `Visor AR - ${name}`;
+      
+      viewer.src = url;
+      viewer.alt = name;
+      
+      viewer.addEventListener('load', () => {
+        loading.style.display = 'none';
+        prompt.style.display = 'block';
+      });
+      
+      viewer.addEventListener('error', (err) => {
+        console.error("Error al cargar modelo:", err);
+        showError("Error al cargar el modelo. El formato puede ser incompatible o la URL es inaccesible.");
+      });
+    }
+    
+    // Mostrar modelo de demostración
+    function showDemoModel() {
+      loadModel(
+        'https://modelviewer.dev/shared-assets/models/Astronaut.glb',
+        'Modelo de demostración'
+      );
+    }
+    
+    // Mostrar error
+    function showError(message) {
+      loading.style.display = 'none';
+      error.textContent = message;
+      error.style.display = 'block';
+      setTimeout(() => {
+        error.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html> 

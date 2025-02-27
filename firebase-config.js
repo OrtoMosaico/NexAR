@@ -26,4 +26,27 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 // Verificar inicialización
-console.log('Firebase inicializado correctamente'); 
+console.log('Firebase inicializado correctamente');
+
+// Ejemplo de reglas para Storage que deberías aplicar en la consola de Firebase:
+/*
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Permitir lectura pública para los modelos públicos
+    match /public-models/{fileName} {
+      allow read: if true;
+    }
+    
+    // Permitir lectura pública para los metadatos públicos
+    match /public-metadata/{fileName} {
+      allow read: if true;
+    }
+    
+    // Reglas normales para el resto de archivos
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+*/ 
