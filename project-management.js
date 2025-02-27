@@ -148,14 +148,28 @@ export function hideNewProjectModal() {
 
 // Función actualizada para ver un modelo en AR
 export function viewModel(modelUrl, shortUrl, modelName) {
-  // Verificar que tengamos la URL corta
+  // Verificar y posiblemente corregir la URL base
+  let finalUrl;
+  
   if (shortUrl && shortUrl.includes('/v.html?h=')) {
-    console.log('Abriendo con URL corta:', shortUrl);
-    window.open(shortUrl, '_blank');
+    // Si estamos en GitHub Pages pero la URL corta apunta a localhost
+    if (window.location.href.includes('ortomosaico.github.io') && 
+        (shortUrl.includes('127.0.0.1') || shortUrl.includes('localhost'))) {
+      
+      // Extraer el hash y reconstruir la URL
+      const hash = shortUrl.split('h=')[1];
+      const baseUrl = getBaseUrl();
+      finalUrl = `${baseUrl}/v.html?h=${hash}`;
+      console.log('URL corregida para GitHub Pages:', finalUrl);
+    } else {
+      finalUrl = shortUrl;
+    }
+    
+    window.open(finalUrl, '_blank');
   } else {
-    console.warn('URL corta no disponible, usando URL de respaldo');
-    // URL de respaldo con el archivo AR original
-    const arViewerUrl = `ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
+    // URL de respaldo
+    const baseUrl = getBaseUrl();
+    const arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     window.open(arViewerUrl, '_blank');
   }
 }
@@ -230,12 +244,14 @@ export async function uploadModel() {
         [`models.${modelId}`]: modelData
       });
       
-      // Generar hash y URL corta
+      // Generar hash
       const hash = generateUrlHash(downloadURL, modelName, secretKey);
       console.log('Hash generado:', hash);
-      const baseUrl = window.location.origin;
+      
+      // Usar la función getBaseUrl para obtener la URL base correcta
+      const baseUrl = getBaseUrl();
       const shortUrl = `${baseUrl}/v.html?h=${hash}`;
-      console.log('URL corta generada:', shortUrl);
+      console.log('URL corta generada con base dinámica:', shortUrl);
       
       // Guardar hash y URL en la base de datos
       await updateDoc(projectRef, {
@@ -555,15 +571,27 @@ let currentQRUrl = '';
 // Función QR actualizada para usar v.html con hash
 export function showQRModal(modelUrl, modelName, shortUrl) {
   try {
-    // Verificar que tengamos la URL corta con hash
     let arViewerUrl;
+    
     if (shortUrl && shortUrl.includes('/v.html?h=')) {
-      // Usar directamente la URL corta
-      arViewerUrl = shortUrl;
-      console.log('Usando URL corta:', arViewerUrl);
+      // Si la URL corta ya existe pero apunta al localhost, 
+      // actualizarla a la URL de GitHub Pages si estamos en ese entorno
+      if (window.location.href.includes('ortomosaico.github.io') && 
+          shortUrl.includes('127.0.0.1') || 
+          shortUrl.includes('localhost')) {
+        
+        // Extraer el hash de la URL
+        const hash = shortUrl.split('h=')[1];
+        const baseUrl = getBaseUrl();
+        arViewerUrl = `${baseUrl}/v.html?h=${hash}`;
+        console.log('URL corta corregida para GitHub Pages:', arViewerUrl);
+      } else {
+        // Usar la URL corta tal como está
+        arViewerUrl = shortUrl;
+      }
     } else {
-      console.warn('URL corta no encontrada, usando URL de respaldo');
-      const baseUrl = window.location.origin;
+      // URL de respaldo
+      const baseUrl = getBaseUrl();
       arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
     
@@ -635,6 +663,19 @@ export function downloadQR() {
     console.error('Error al descargar QR:', error);
     alert('Error al descargar QR: ' + error.message);
   }
+}
+
+// Función para obtener la URL base correcta (local o GitHub Pages)
+function getBaseUrl() {
+  const currentUrl = window.location.href;
+  
+  // Verificar si estamos en GitHub Pages
+  if (currentUrl.includes('ortomosaico.github.io')) {
+    return 'https://ortomosaico.github.io/NexAR';
+  }
+  
+  // De lo contrario, usar la URL base actual (localhost o cualquier otro host)
+  return window.location.origin;
 }
 
 // Hacer TODAS las funciones disponibles globalmente
