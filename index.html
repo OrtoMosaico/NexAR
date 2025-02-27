@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <title>Visor AR Web Interactivo</title>
 
-  <!-- Model Viewer (CDN) -->
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <!-- Actualizar Model Viewer a la última versión -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -30,6 +32,7 @@
       <h3>Crear Nuevo Proyecto</h3>
       <input type="text" id="projectName" placeholder="Nombre del Proyecto" />
       <textarea id="projectDescription" placeholder="Descripción del Proyecto"></textarea>
+      <!-- AQUÍ llamamos a la función con onclick -->
       <button onclick="createNewProject()">Crear Proyecto</button>
     </div>
 
@@ -56,9 +59,20 @@
       camera-controls
       ar
       ar-modes="webxr scene-viewer quick-look"
-      shadow-intensity="1"
+      ar-scale="fixed"
+      interaction-prompt="auto"
       auto-rotate
+      shadow-intensity="1"
+      shadow-softness="1"
+      exposure="1"
+      ios-src=""
+      style="width: 100%; height: 80vh;"
+      ar-placement="floor"
+      quick-look-browsers="safari chrome"
     >
+      <button slot="ar-button" class="ar-button">
+        Ver en AR 🔍
+      </button>
     </model-viewer>
     <div class="ar-controls">
       <button onclick="resetModelPosition()" class="btn-control">Resetear Posición</button>

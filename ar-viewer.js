@@ -1,8 +1,5 @@
 // ar-viewer.js
 
-// Si no necesitas Firebase aquí, no importa, 
-// no es necesario importar nada adicional
-
 class ARViewer {
     constructor() {
       this.modelViewer = document.getElementById('modelViewer');
@@ -48,11 +45,25 @@ class ARViewer {
       console.log('Cargando modelo:', modelUrl);
   
       const settings = { ...this.defaultSettings, ...options };
+      
+      // Configurar el modelo para iOS
+      const iosSrc = modelUrl.replace('.glb', '.usdz');
+      this.modelViewer.iosSrc = iosSrc;
+      
+      // Configurar el resto de propiedades
       Object.entries(settings).forEach(([key, value]) => {
         this.modelViewer[key] = value;
       });
   
       this.modelViewer.src = modelUrl;
+      
+      // Agregar listeners específicos para AR
+      this.modelViewer.addEventListener('ar-status', (event) => {
+        if (event.detail.status === 'failed') {
+          console.error('No se pudo iniciar AR:', event.detail.error);
+        }
+      });
+  
       this.showARViewer();
     }
   
@@ -119,7 +130,7 @@ class ARViewer {
     arViewer.toggleAutoRotate();
   }
   
-  // Hacer funciones disponibles globalmente (opcional)
+  // Hacer funciones disponibles globalmente
   window.viewModel = viewModel;
   window.hideViewer = hideViewer;
   window.resetModelPosition = resetModelPosition;

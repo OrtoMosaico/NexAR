@@ -235,7 +235,8 @@ export function viewModel(modelUrl) {
   document.getElementById('adminPanel').style.display = 'none';
 }
 
-// Hacer funciones accesibles globalmente para onclick en HTML
+// EXponer funciones globalmente para que onclick="..." en el HTML funcione
+window.createNewProject = createNewProject;
 window.showUploadModal = showUploadModal;
 window.deleteProject = deleteProject;
 window.uploadModel = uploadModel;
