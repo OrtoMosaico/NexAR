@@ -351,13 +351,9 @@ function createProjectElement(projectId, project) {
         // Mostrar modelos del proyecto
         loadModels(projectId, projectData);
         
-        // Cerrar el menú en dispositivos móviles
+        // Cerrar sidebar en móvil
         if (window.innerWidth <= 768) {
-          const sidebar = document.querySelector('.sidebar');
-          if (sidebar) {
-            sidebar.classList.remove('active');
-            sidebar.style.display = 'none';
-          }
+          closeSidebar();
         }
       }
     });
@@ -415,36 +411,40 @@ async function loadModels(projectId, projectData = null) {
   }
 }
 
-// Crear tarjeta de modelo
+// Función mejorada para crear tarjetas de modelos
 function createModelCard(modelId, model, projectId) {
-  console.log('Creando tarjeta para modelo:', model);
-  
   // Crear elemento div para la tarjeta
   const div = document.createElement('div');
   div.className = 'model-card';
   
-  // Añadir un icono más sutil para indicar privacidad
-  const privacyIcon = model.isPublic 
-    ? '<i class="fas fa-globe" title="Modelo público" style="color: #28a745; margin-left: 5px;"></i>' 
-    : '<i class="fas fa-lock" title="Modelo privado" style="color: #6c757d; margin-left: 5px;"></i>';
-    
+  // Verificar si es público o privado
+  const isPublic = model.isPublic === true;
+  const privacyTooltip = isPublic ? 'Modelo público' : 'Modelo privado';
+  const privacyIcon = isPublic 
+    ? '<i class="fas fa-globe"></i>' 
+    : '<i class="fas fa-lock"></i>';
+  
+  // Crear estructura HTML de la tarjeta
   div.innerHTML = `
     <div class="model-preview">
-      <i class="fas fa-cube fa-4x"></i>
+      <i class="fas fa-cube model-icon"></i>
+      <div class="privacy-badge ${isPublic ? 'public' : 'private'}" title="${privacyTooltip}">
+        ${privacyIcon}
+      </div>
     </div>
     <div class="model-info">
-      <h4>${model.name} ${privacyIcon}</h4>
+      <h4>${model.name}</h4>
       <p>${model.description || 'Sin descripción'}</p>
     </div>
     <div class="model-actions">
-      <button class="view-btn"><i class="fas fa-eye"></i></button>
-      <button class="qr-btn"><i class="fas fa-qrcode"></i></button>
-      <button class="edit-btn"><i class="fas fa-edit"></i></button>
-      <button class="delete-btn"><i class="fas fa-trash"></i></button>
+      <button class="view-btn" title="Ver modelo"><i class="fas fa-eye"></i></button>
+      <button class="qr-btn" title="Código QR"><i class="fas fa-qrcode"></i></button>
+      <button class="edit-btn" title="Editar"><i class="fas fa-edit"></i></button>
+      <button class="delete-btn" title="Eliminar"><i class="fas fa-trash"></i></button>
     </div>
   `;
   
-  // Añadir event listeners
+  // Agregar eventos a los botones
   div.querySelector('.view-btn').addEventListener('click', () => {
     viewModel(model.url, model.shortUrl, model.name, modelId, projectId);
   });
@@ -687,6 +687,50 @@ export async function updateModel() {
   }
 }
 
+// Función para inicializar la aplicación
+export function initializeApp() {
+  console.log('Inicializando aplicación...');
+  setupProjectsListener();
+  setupMobileMenu();
+}
+
+// Función simplificada para configurar el menú móvil
+export function setupMobileMenu() {
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.querySelector('.sidebar');
+  
+  // Solo ejecutar si existen los elementos necesarios
+  if (!menuToggle || !sidebar) return;
+  
+  // Configurar el evento clic una sola vez
+  menuToggle.addEventListener('click', function() {
+    console.log('Botón de menú clickeado');
+    
+    // Simplemente toggle la clase sidebar-visible
+    sidebar.classList.toggle('sidebar-visible');
+    
+    // Registrar estado para depuración
+    console.log('Sidebar visible:', sidebar.classList.contains('sidebar-visible'));
+  });
+  
+  // Cerrar sidebar al hacer clic en un proyecto
+  document.querySelectorAll('.project-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('sidebar-visible');
+      }
+    });
+  });
+}
+
+// Agregar esta función para cerrar la barra lateral
+export function closeSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar) {
+    sidebar.classList.remove('sidebar-visible');
+  }
+}
+
 // Hacer TODAS las funciones disponibles globalmente
 window.createNewProject = createNewProject;
 window.deleteProject = deleteProject;
@@ -707,3 +751,6 @@ window.downloadQR = downloadQR;
 window.showEditModelModal = showEditModelModal;
 window.hideEditModelModal = hideEditModelModal;
 window.updateModel = updateModel;
+window.initializeApp = initializeApp;
+window.setupMobileMenu = setupMobileMenu;
+window.closeSidebar = closeSidebar;

@@ -335,33 +335,47 @@
   /* Grid de modelos */
   .models-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 20px;
-    margin-top: 20px;
+    padding: 20px 0;
   }
   
   .model-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: transform 0.2s ease;
-    height: 100%;
+    position: relative;
+    border: none;
   }
   
   .model-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
   }
   
   .model-preview {
-    height: 160px;
-    background-color: var(--bg-light);
+    background-color: #f5f5f5;
+    height: 180px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .model-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  
+  .model-preview .model-icon {
+    font-size: 64px;
+    color: #888;
   }
   
   .model-info {
@@ -371,62 +385,147 @@
   
   .model-info h4 {
     margin: 0 0 8px 0;
-    font-size: 16px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   
   .model-info p {
-    margin: 0 0 12px 0;
+    margin: 0;
+    color: #666;
     font-size: 14px;
-    color: var(--text-secondary);
-  }
-  
-  .model-info small {
-    font-size: 12px;
-    color: var(--text-tertiary);
+    line-height: 1.4;
   }
   
   .model-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 16px;
-    border-top: 1px solid var(--border-color);
+    justify-content: space-around;
+    padding: 8px 16px 16px;
+    background: transparent;
+    border-top: none;
   }
   
-  /* Asegurar que los botones sean visibles */
-  .model-actions .btn {
-    flex: 1;
-    min-width: 80px;
-    padding: 8px;
-    margin: 0;
+  .model-actions button {
+    background: transparent;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    color: #555;
+    transition: all 0.2s ease;
+    padding: 0;
   }
   
-  /* Ajustes para el botón de prueba */
-  .test-button {
-    margin-top: auto;
-    margin-bottom: 16px;
+  .model-actions button:hover {
+    background-color: #f0f0f0;
+    color: var(--primary-color);
+  }
+  
+  .view-btn:hover {
+    color: #4CAF50;
+  }
+  
+  .qr-btn:hover {
+    color: #2196F3;
+  }
+  
+  .edit-btn:hover {
+    color: #FF9800;
+  }
+  
+  .delete-btn:hover {
+    color: #F44336;
+  }
+  
+  /* Badge para indicar público/privado */
+  .privacy-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  
+  .privacy-badge.public {
+    color: #4CAF50;
+  }
+  
+  .privacy-badge.private {
+    color: #757575;
   }
   
   /* Responsive mejorado */
   @media (max-width: 768px) {
     .sidebar {
-      display: none;
       position: fixed;
-      top: var(--header-height);
       left: 0;
-      width: 100%;
-      z-index: 90;
-      height: calc(100vh - var(--header-height));
+      top: 60px;
+      bottom: 0;
+      width: 80%;
+      max-width: 300px;
+      z-index: 1000;
       background-color: white;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+      overflow-y: auto;
     }
     
-    .sidebar.active {
+    .sidebar.sidebar-hidden {
+      transform: translateX(-100%);
+    }
+    
+    .sidebar.sidebar-visible, 
+    .main-container.sidebar-visible .sidebar {
+      transform: translateX(0);
       display: flex !important;
+    }
+    
+    .main-container.sidebar-visible::before {
+      content: '';
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
+    }
+    
+    .main-container.mobile-view .content {
+      width: 100%;
+    }
+    
+    .main-container {
+      display: block;
+    }
+    
+    .main-container.mobile-view .content {
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    
+    /* Mostrar botón de menú en móvil */
+    .menu-toggle {
+      display: block !important;
+      margin-right: 16px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 0;
+      width: auto;
     }
     
     .content {
@@ -439,35 +538,139 @@
     }
     
     .models-grid {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: 1fr !important;
+      gap: 12px !important;
+      padding: 12px !important;
     }
     
-    .menu-toggle {
-      display: block !important;
-      margin-right: 16px;
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--text-primary);
-      cursor: pointer;
-      padding: 0;
-      width: auto;
+    /* Diseño de tarjeta en una sola fila */
+    .model-card {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      height: auto !important;
+      min-height: 60px !important;
+      padding: 8px !important;
+      gap: 8px !important;
+      border-radius: 8px !important;
+    }
+    
+    /* Imagen más compacta */
+    .model-preview {
+      width: 40px !important;
+      height: 40px !important;
+      flex-shrink: 0 !important;
+      background: transparent !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 4px !important;
+    }
+    
+    .model-preview .model-icon {
+      font-size: 24px !important;
+    }
+    
+    /* Información básica */
+    .model-info {
+      flex: 1 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+    }
+    
+    .model-info h4 {
+      font-size: 14px !important;
+      margin: 0 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+    
+    /* Garantizar que los botones sean visibles */
+    .model-actions {
+      display: flex !important;
+      flex-direction: row !important;
+      justify-content: flex-end !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      flex-shrink: 0 !important;
+      position: static !important;
+    }
+    
+    /* Estilos para cada botón individual */
+    .model-actions button {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 30px !important;
+      height: 30px !important;
+      border-radius: 50% !important;
+      background-color: #f5f5f5 !important;
+      color: #333 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      z-index: 10 !important;
+      border: none !important;
+    }
+    
+    /* Estilos específicos para cada tipo de botón */
+    .model-actions .view-btn {
+      color: #4CAF50 !important;
+    }
+    
+    .model-actions .qr-btn {
+      color: #2196F3 !important;
+    }
+    
+    .model-actions .edit-btn {
+      color: #FF9800 !important;
+    }
+    
+    .model-actions .delete-btn {
+      color: #F44336 !important;
+    }
+    
+    /* Badge de privacidad */
+    .privacy-badge {
+      top: 4px !important;
+      right: 4px !important;
+      width: 16px !important;
+      height: 16px !important;
     }
   }
   
-  /* Botón de menú para móvil */
-  .menu-toggle {
-    display: none;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    margin-right: 16px;
+  /* Ajustes adicionales para pantallas muy pequeñas */
+  @media (max-width: 400px) {
+    .model-actions button {
+      margin: 0 2px;
+    }
+    
+    .model-info {
+      padding: 4px;
+    }
+    
+    .model-preview {
+      height: 80px;
+    }
+  }
+  
+  /* Ocultar botón de menú en desktop */
+  @media (min-width: 769px) {
+    .menu-toggle {
+      display: none;
+    }
   }
   
   @media (max-width: 480px) {
     .models-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding: 8px;
     }
   }
   
@@ -937,6 +1140,203 @@
     #qrCode {
       width: 100%;
       max-width: 200px;
+    }
+  }
+  
+  /* Arreglar el botón de menú para que solo aparezca en móvil */
+  .menu-toggle {
+    display: none !important;
+  }
+  
+  /* Estilos responsivos */
+  @media (max-width: 768px) {
+    /* Mostrar el botón de menú solo en móvil */
+    .menu-toggle {
+      display: block !important;
+      margin-right: 16px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 0;
+      width: auto;
+    }
+    
+    /* Estilos mejorados para sidebar en móvil */
+    .sidebar {
+      position: fixed;
+      top: var(--header-height);
+      left: 0;
+      bottom: 0;
+      width: 80%;
+      max-width: 280px;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      background-color: white;
+    }
+    
+    /* Clase para mostrar el sidebar */
+    .sidebar-visible {
+      transform: translateX(0) !important;
+      display: flex !important;
+    }
+  }
+  
+  /* Ajustes adicionales para optimizar el espacio en móvil */
+  @media (max-width: 768px) {
+    /* Reducir drásticamente la previsualización */
+    .model-preview {
+      height: 60px !important;
+    }
+    
+    /* Cambiar layout de la tarjeta para optimizar espacio */
+    .model-card {
+      display: grid !important;
+      grid-template-columns: 60px 1fr !important;
+      grid-template-rows: auto auto !important;
+      grid-template-areas: 
+        "preview info"
+        "actions actions" !important;
+      gap: 0 !important;
+      padding: 0 !important;
+    }
+    
+    .model-preview {
+      grid-area: preview !important;
+      border-radius: 0 !important;
+    }
+    
+    .model-info {
+      grid-area: info !important;
+      padding: 4px 8px !important;
+      height: 60px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+    }
+    
+    .model-actions {
+      grid-area: actions !important;
+      padding: 4px 8px !important;
+      margin: 0 !important;
+      border-top: 1px solid #eee !important;
+    }
+    
+    /* Ajustar botones para que sean más tocables */
+    .model-actions button {
+      width: 36px !important;
+      height: 36px !important;
+    }
+    
+    /* Optimizar badge */
+    .privacy-badge {
+      top: 2px !important;
+      right: 2px !important;
+      width: 16px !important;
+      height: 16px !important;
+      font-size: 8px !important;
+    }
+  }
+  
+  /* Estilos mejorados para botones en todos los tamaños de pantalla */
+  .model-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: none;
+    transition: all 0.2s ease;
+  }
+  
+  .model-actions .view-btn {
+    color: #4CAF50;
+  }
+  
+  .model-actions .qr-btn {
+    color: #2196F3;
+  }
+  
+  .model-actions .edit-btn {
+    color: #FF9800;
+  }
+  
+  .model-actions .delete-btn {
+    color: #F44336;
+  }
+  
+  .model-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+  }
+  
+  /* Rediseño de las tarjetas en móvil para poner botones al lado de la imagen */
+  @media (max-width: 768px) {
+    .model-card {
+      display: grid !important;
+      grid-template-columns: auto 1fr auto !important;
+      grid-template-areas: "preview info actions" !important;
+      gap: 8px !important;
+      padding: 8px !important;
+      height: auto !important;
+      min-height: 60px !important;
+      align-items: center !important;
+    }
+    
+    .model-preview {
+      grid-area: preview !important;
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 4px !important;
+      margin: 0 !important;
+    }
+    
+    .model-info {
+      grid-area: info !important;
+      padding: 0 !important;
+      height: auto !important;
+    }
+    
+    .model-actions {
+      grid-area: actions !important;
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 8px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      justify-content: flex-end !important;
+    }
+    
+    .model-actions button {
+      width: 36px !important;
+      height: 36px !important;
+      font-size: 14px !important;
+    }
+  }
+  
+  /* Ajustes para pantallas muy pequeñas */
+  @media (max-width: 400px) {
+    .model-info h4 {
+      font-size: 12px !important;
+    }
+    
+    .model-actions {
+      gap: 6px !important;
+    }
+    
+    .model-actions button {
+      width: 32px !important;
+      height: 32px !important;
+      font-size: 12px !important;
     }
   }
   
