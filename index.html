@@ -65,17 +65,23 @@
       shadow-intensity="1"
       shadow-softness="1"
       exposure="1"
-      ios-src=""
       style="width: 100%; height: 80vh;"
       ar-placement="floor"
       quick-look-browsers="safari chrome"
       environment-image="neutral"
-      poster="assets/poster.webp"
-      loading="lazy"
     >
-      <button slot="ar-button" style="background-color: white; border-radius: 4px; border: none; position: absolute; bottom: 16px; right: 16px; padding: 12px 24px;">
-        Ver en AR 🔍
+      <!-- Botón AR personalizado -->
+      <button slot="ar-button" 
+              id="ar-button"
+              style="background-color: white; border-radius: 4px; border: none; position: absolute; bottom: 16px; right: 16px; padding: 12px 24px; font-weight: 500;">
+          <img src="ar_icon.png" alt="AR" style="width: 20px; height: 20px; vertical-align: middle;"> 
+          Ver en AR
       </button>
+
+      <!-- Fallback para dispositivos no compatibles -->
+      <div class="ar-prompt" slot="ar-prompt">
+          👆 Toca para ver en AR
+      </div>
     </model-viewer>
     <div class="ar-controls">
       <button onclick="resetModelPosition()" class="btn-control">Resetear Posición</button>

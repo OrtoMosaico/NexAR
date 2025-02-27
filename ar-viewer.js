@@ -45,27 +45,42 @@ class ARViewer {
       
       console.log('Cargando modelo:', modelUrl);
   
+      // Detectar plataforma
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const isAndroid = /Android/i.test(navigator.userAgent);
+  
       // Configuración básica
       this.modelViewer.src = modelUrl;
       
-      // Para iOS
-      if (modelUrl.endsWith('.glb')) {
-        const iosSrc = modelUrl.replace('.glb', '.usdz');
-        this.modelViewer.iosSrc = iosSrc;
+      // Configurar AR según plataforma
+      if (isIOS) {
+        // Configuración iOS
+        if (modelUrl.endsWith('.glb')) {
+          const iosSrc = modelUrl.replace('.glb', '.usdz');
+          this.modelViewer.iosSrc = iosSrc;
+        }
+        this.modelViewer.setAttribute('ar-modes', 'quick-look');
+        this.modelViewer.setAttribute('quick-look-browsers', 'safari');
+      } else if (isAndroid) {
+        // Configuración Android
+        this.modelViewer.setAttribute('ar-modes', 'webxr scene-viewer');
+        this.modelViewer.setAttribute('ar-scale', 'auto');
+        this.modelViewer.setAttribute('ar-placement', 'floor');
+        
+        // Asegurar que Scene Viewer se abra en modo AR
+        const sceneViewerUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end;`;
+        
+        this.modelViewer.setAttribute('scene-viewer-url', sceneViewerUrl);
       }
   
-      // Configuraciones AR
-      this.modelViewer.ar = true;
-      this.modelViewer.arModes = 'webxr scene-viewer quick-look';
-      this.modelViewer.arScale = 'auto';
-      
-      // Otras configuraciones
+      // Configuraciones comunes
       const settings = {
         ...this.defaultSettings,
         cameraControls: true,
         autoRotate: true,
         shadowIntensity: 1,
         exposure: 1,
+        ar: true,
         ...options
       };
   
@@ -73,12 +88,20 @@ class ARViewer {
         this.modelViewer[key] = value;
       });
   
-      // Monitorear estado AR
+      // Manejo de eventos AR
       this.modelViewer.addEventListener('ar-status', (event) => {
         console.log('Estado AR:', event.detail.status);
         if (event.detail.status === 'failed') {
           console.error('Error AR:', event.detail.error);
-          alert('No se pudo iniciar AR. Por favor, asegúrate de usar un dispositivo compatible.');
+          
+          let errorMessage = 'No se pudo iniciar AR. ';
+          if (isIOS) {
+            errorMessage += 'Asegúrese de usar Safari en iOS 12 o superior.';
+          } else if (isAndroid) {
+            errorMessage += 'Asegúrese de tener Google Play Services for AR instalado.';
+          }
+          
+          alert(errorMessage);
         }
       });
   
