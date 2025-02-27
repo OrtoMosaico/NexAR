@@ -42,25 +42,43 @@ class ARViewer {
         console.error('Model viewer no encontrado');
         return;
       }
+      
       console.log('Cargando modelo:', modelUrl);
   
-      const settings = { ...this.defaultSettings, ...options };
+      // Configuración básica
+      this.modelViewer.src = modelUrl;
       
-      // Configurar el modelo para iOS
-      const iosSrc = modelUrl.replace('.glb', '.usdz');
-      this.modelViewer.iosSrc = iosSrc;
+      // Para iOS
+      if (modelUrl.endsWith('.glb')) {
+        const iosSrc = modelUrl.replace('.glb', '.usdz');
+        this.modelViewer.iosSrc = iosSrc;
+      }
+  
+      // Configuraciones AR
+      this.modelViewer.ar = true;
+      this.modelViewer.arModes = 'webxr scene-viewer quick-look';
+      this.modelViewer.arScale = 'auto';
       
-      // Configurar el resto de propiedades
+      // Otras configuraciones
+      const settings = {
+        ...this.defaultSettings,
+        cameraControls: true,
+        autoRotate: true,
+        shadowIntensity: 1,
+        exposure: 1,
+        ...options
+      };
+  
       Object.entries(settings).forEach(([key, value]) => {
         this.modelViewer[key] = value;
       });
   
-      this.modelViewer.src = modelUrl;
-      
-      // Agregar listeners específicos para AR
+      // Monitorear estado AR
       this.modelViewer.addEventListener('ar-status', (event) => {
+        console.log('Estado AR:', event.detail.status);
         if (event.detail.status === 'failed') {
-          console.error('No se pudo iniciar AR:', event.detail.error);
+          console.error('Error AR:', event.detail.error);
+          alert('No se pudo iniciar AR. Por favor, asegúrate de usar un dispositivo compatible.');
         }
       });
   
