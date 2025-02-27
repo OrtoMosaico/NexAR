@@ -109,6 +109,12 @@ class ARViewer {
         this.modelViewer.shadowIntensity = value;
       }
     }
+  
+    setScale(scale) {
+      if (this.modelViewer) {
+        this.modelViewer.scale = `${scale} ${scale} ${scale}`;
+      }
+    }
   }
   
   const arViewer = new ARViewer();
@@ -130,11 +136,25 @@ class ARViewer {
     arViewer.toggleAutoRotate();
   }
   
+  export function decreaseScale() {
+    const currentScale = arViewer.modelViewer.scale.split(' ')[0];
+    const newScale = Math.max(0.1, currentScale * 0.8);
+    arViewer.setScale(newScale);
+  }
+  
+  export function increaseScale() {
+    const currentScale = arViewer.modelViewer.scale.split(' ')[0];
+    const newScale = Math.min(10, currentScale * 1.2);
+    arViewer.setScale(newScale);
+  }
+  
   // Hacer funciones disponibles globalmente
   window.viewModel = viewModel;
   window.hideViewer = hideViewer;
   window.resetModelPosition = resetModelPosition;
   window.toggleRotation = toggleRotation;
+  window.decreaseScale = decreaseScale;
+  window.increaseScale = increaseScale;
   
   export default ARViewer;
   
