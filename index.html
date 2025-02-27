@@ -90,6 +90,17 @@
         <h3>Subir Nuevo Modelo</h3>
         <input type="text" id="modelName" placeholder="Nombre del Modelo" />
         <textarea id="modelDescription" placeholder="Descripción del Modelo"></textarea>
+        <div class="form-group mt-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="modelIsPublic" checked>
+            <label class="form-check-label" for="modelIsPublic">
+              Modelo público (visible para cualquiera con el enlace)
+            </label>
+          </div>
+          <small class="form-text text-muted">
+            Si no está marcado, solo usuarios autenticados podrán verlo.
+          </small>
+        </div>
         <input type="file" id="modelFile" accept=".glb" class="file-input" />
         <div class="modal-actions">
           <button onclick="uploadModel()" class="btn btn-primary">Subir</button>
@@ -124,6 +135,30 @@
             <i class="fas fa-download"></i> Descargar QR
           </button>
           <button onclick="hideQRModal()" class="btn btn-secondary">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Añadir después del modal de QR -->
+    <div id="editModelModal" class="modal">
+      <div class="modal-content">
+        <h3>Editar Modelo</h3>
+        <input type="text" id="editModelName" placeholder="Nombre del Modelo" />
+        <textarea id="editModelDescription" placeholder="Descripción del Modelo"></textarea>
+        <div class="form-group mt-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="editModelIsPublic">
+            <label class="form-check-label" for="editModelIsPublic">
+              Modelo público (visible para cualquiera con el enlace)
+            </label>
+          </div>
+          <small class="form-text text-muted">
+            Si no está marcado, solo usuarios autenticados podrán verlo.
+          </small>
+        </div>
+        <div class="modal-actions">
+          <button onclick="updateModel()" class="btn btn-primary">Guardar</button>
+          <button onclick="hideEditModelModal()" class="btn btn-secondary">Cancelar</button>
         </div>
       </div>
     </div>

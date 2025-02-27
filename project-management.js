@@ -146,29 +146,19 @@ export function hideNewProjectModal() {
   document.getElementById('newProjectModal').style.display = 'none';
 }
 
-// Función actualizada para ver un modelo en AR
-export function viewModel(modelUrl, shortUrl, modelName) {
-  // Verificar y posiblemente corregir la URL base
-  let finalUrl;
-  
-  if (shortUrl && shortUrl.includes('/v.html?h=')) {
-    // Si estamos en GitHub Pages pero la URL corta apunta a localhost
-    if (window.location.href.includes('ortomosaico.github.io') && 
-        (shortUrl.includes('127.0.0.1') || shortUrl.includes('localhost'))) {
-      
-      // Extraer el hash y reconstruir la URL
-      const hash = shortUrl.split('h=')[1];
-      const baseUrl = getBaseUrl();
-      finalUrl = `${baseUrl}/v.html?h=${hash}`;
-      console.log('URL corregida para GitHub Pages:', finalUrl);
-    } else {
-      finalUrl = shortUrl;
-    }
-    
-    window.open(finalUrl, '_blank');
+// Función para ver modelo en AR
+export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
+  if (shortUrl && shortUrl.includes('/ar.html?')) {
+    // Si hay URL corta, usarla directamente
+    window.open(shortUrl, '_blank');
+  } else if (projectId && modelId) {
+    // Si tenemos IDs pero no URL corta, generar URL
+    const baseUrl = getGlobalBaseUrl();
+    const arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
+    window.open(arViewerUrl, '_blank');
   } else {
-    // URL de respaldo
-    const baseUrl = getBaseUrl();
+    // Fallback - usar la URL directa
+    const baseUrl = getGlobalBaseUrl();
     const arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     window.open(arViewerUrl, '_blank');
   }
@@ -179,9 +169,9 @@ export function testViewer() {
   window.open('ar-viewer.html', '_blank');
 }
 
-// Subir modelo 3D - versión final con mejora de errores
+// Subir modelo 3D - función actualizada con opción de privacidad
 export async function uploadModel() {
-  // Obtener ID de proyecto (código existente)
+  // Obtener el ID del proyecto
   const modal = document.getElementById('uploadModelModal');
   let projectId = modal.dataset.projectId;
   
@@ -197,6 +187,8 @@ export async function uploadModel() {
   const modelName = document.getElementById('modelName').value;
   const modelDescription = document.getElementById('modelDescription').value;
   const modelFile = document.getElementById('modelFile').files[0];
+  // Obtener el valor del checkbox público/privado
+  const isPublic = document.getElementById('modelIsPublic').checked;
 
   if (!modelName || !modelFile) {
     alert('Por favor, completa todos los campos requeridos');
@@ -210,103 +202,82 @@ export async function uploadModel() {
     uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
     uploadBtn.disabled = true;
 
-    // Generar un ID corto de 6 caracteres
+    console.log('Subiendo modelo a proyecto:', projectId);
+    
+    // Generar ID corto para el modelo (6 caracteres)
     const modelId = Math.random().toString(36).substring(2, 8);
     
-    try {
-      // Subir archivo a Storage
-      console.log('Subiendo archivo a Storage...');
-      const storageRef = ref(storage, `models/${auth.currentUser.uid}/${projectId}/${modelId}.glb`);
-      await uploadBytes(storageRef, modelFile);
-      const downloadURL = await getDownloadURL(storageRef);
-      console.log('Archivo subido exitosamente, URL:', downloadURL);
-      
-      // NUEVA FUNCIONALIDAD: Generar clave secreta para el modelo
-      // Esta clave será utilizada para crear un sistema de hash simple
-      const secretKey = generateSecretKey();
-      
-      // Crear información del modelo
-      const modelData = {
-        id: modelId,
-        name: modelName,
-        description: modelDescription || '',
-        url: downloadURL,
-        fileName: modelFile.name,
-        uploadedAt: new Date(),
-        storageRef: `models/${auth.currentUser.uid}/${projectId}/${modelId}.glb`,
-        secretKey: secretKey // Guardamos la clave secreta
-      };
+    // Subir archivo a Storage
+    console.log('Subiendo archivo a Storage...');
+    const storageRef = ref(storage, `models/${auth.currentUser.uid}/${projectId}/${modelId}.glb`);
+    await uploadBytes(storageRef, modelFile);
+    const downloadURL = await getDownloadURL(storageRef);
+    console.log('Archivo subido exitosamente, URL:', downloadURL);
+    
+    // Crear información del modelo
+    const modelData = {
+      id: modelId,
+      name: modelName,
+      description: modelDescription || '',
+      url: downloadURL,
+      fileName: modelFile.name,
+      uploadedAt: new Date(),
+      storageRef: `models/${auth.currentUser.uid}/${projectId}/${modelId}.glb`,
+      isPublic: isPublic // Guardar el estado público/privado
+    };
 
-      // Actualizar el documento del proyecto
-      console.log('Actualizando documento del proyecto...');
-      const projectRef = doc(db, 'projects', projectId);
-      await updateDoc(projectRef, {
-        [`models.${modelId}`]: modelData
-      });
-      
-      // Generar hash
-      const hash = generateUrlHash(downloadURL, modelName, secretKey);
-      console.log('Hash generado:', hash);
-      
-      // Usar la función getBaseUrl para obtener la URL base correcta
-      const baseUrl = getBaseUrl();
-      const shortUrl = `${baseUrl}/v.html?h=${hash}`;
-      console.log('URL corta generada con base dinámica:', shortUrl);
-      
-      // Guardar hash y URL en la base de datos
-      await updateDoc(projectRef, {
-        [`models.${modelId}.shortUrl`]: shortUrl,
-        [`models.${modelId}.hash`]: hash
-      });
-      console.log('Hash y URL corta guardados en la base de datos');
-      
-      // Restaurar botón y cerrar modal
-      uploadBtn.innerHTML = originalText;
-      uploadBtn.disabled = false;
-      closeUploadModal();
-      
-      // Refrescar la lista de modelos
-      loadModels(projectId);
-      
-    } catch (error) {
-      console.error('Error al subir archivo:', error);
-      uploadBtn.innerHTML = originalText;
-      uploadBtn.disabled = false;
-      alert('Error al subir archivo: ' + error.message);
-    }
+    // Referencia al documento del proyecto
+    console.log('Actualizando documento del proyecto...');
+    const projectRef = doc(db, 'projects', projectId);
+    
+    // Actualizar el documento del proyecto con el nuevo modelo
+    await updateDoc(projectRef, {
+      [`models.${modelId}`]: modelData
+    });
+    console.log('Información del modelo guardada en el proyecto');
+    
+    // Generar URL simplificada para el visor AR
+    const baseUrl = getGlobalBaseUrl();
+    const shortUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
+    console.log('URL simplificada generada:', shortUrl);
+    
+    // Guardar la URL en el modelo
+    await updateDoc(projectRef, {
+      [`models.${modelId}.shortUrl`]: shortUrl
+    });
+
+    console.log('Modelo subido exitosamente con ID:', modelId);
+    
+    // Restaurar botón y cerrar modal
+    uploadBtn.innerHTML = originalText;
+    uploadBtn.disabled = false;
+    closeUploadModal();
+    
+    // Refrescar la lista de modelos
+    loadModels(projectId);
+    
   } catch (error) {
-    console.error('Error general:', error);
+    console.error('Error al subir modelo:', error);
+    
+    // Restaurar botón en caso de error
     const uploadBtn = document.querySelector('#uploadModelModal .btn-primary');
     uploadBtn.innerHTML = 'Subir';
     uploadBtn.disabled = false;
-    alert('Error: ' + error.message);
+    
+    alert('Error al subir modelo: ' + error.message);
   }
 }
 
-// Generar clave secreta aleatoria
-function generateSecretKey() {
-  return Math.random().toString(36).substring(2, 10) + 
-         Math.random().toString(36).substring(2, 10);
-}
-
-// Generar hash simple para URL
-function generateUrlHash(modelUrl, modelName, secretKey) {
-  // Crear un hash corto a partir de la URL y nombre del modelo
-  // Usamos el secretKey para agregar seguridad
-  const str = modelUrl + modelName + secretKey;
-  
-  // Algoritmo simple de hash que genera 6-8 caracteres
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convertir a entero de 32 bits
+// Función mejorada para obtener la URL base correcta
+function getGlobalBaseUrl() {
+  // Detectar GitHub Pages
+  if (window.location.hostname.includes('github.io')) {
+    const repoName = window.location.pathname.split('/')[1]; // Obtener el nombre del repositorio
+    return `https://${window.location.hostname}/${repoName}`;
   }
   
-  // Convertir a base36 (números y letras) y tomar 7 caracteres
-  // Esto nos da más de 78 millones de combinaciones posibles
-  const hashStr = Math.abs(hash).toString(36).substring(0, 7);
-  return hashStr;
+  // Para desarrollo local o cualquier otro entorno
+  return window.location.origin;
 }
 
 // Eliminar modelo
@@ -447,44 +418,43 @@ async function loadModels(projectId, projectData = null) {
 // Crear tarjeta de modelo
 function createModelCard(modelId, model, projectId) {
   console.log('Creando tarjeta para modelo:', model);
-  console.log('URL corta:', model.shortUrl);
-  console.log('Hash:', model.hash);
   
-  // Crear el elemento div para la tarjeta
+  // Crear elemento div para la tarjeta
   const div = document.createElement('div');
   div.className = 'model-card';
   
-  // Crear el HTML interno
+  // Añadir un icono más sutil para indicar privacidad
+  const privacyIcon = model.isPublic 
+    ? '<i class="fas fa-globe" title="Modelo público" style="color: #28a745; margin-left: 5px;"></i>' 
+    : '<i class="fas fa-lock" title="Modelo privado" style="color: #6c757d; margin-left: 5px;"></i>';
+    
   div.innerHTML = `
     <div class="model-preview">
-      <i class="fas fa-cube fa-3x"></i>
+      <i class="fas fa-cube fa-4x"></i>
     </div>
     <div class="model-info">
-      <h4>${model.name}</h4>
+      <h4>${model.name} ${privacyIcon}</h4>
       <p>${model.description || 'Sin descripción'}</p>
-      <small>Subido: ${new Date(model.uploadedAt.toDate()).toLocaleDateString()}</small>
     </div>
     <div class="model-actions">
-      <button class="btn btn-primary view-btn">
-        <i class="fas fa-eye"></i> Ver en AR
-      </button>
-      <button class="btn btn-secondary qr-btn">
-        <i class="fas fa-qrcode"></i> QR
-      </button>
-      <button class="btn btn-danger delete-btn">
-        <i class="fas fa-trash"></i>
-      </button>
+      <button class="view-btn"><i class="fas fa-eye"></i></button>
+      <button class="qr-btn"><i class="fas fa-qrcode"></i></button>
+      <button class="edit-btn"><i class="fas fa-edit"></i></button>
+      <button class="delete-btn"><i class="fas fa-trash"></i></button>
     </div>
   `;
   
-  // Agregar event listeners a los botones
+  // Añadir event listeners
   div.querySelector('.view-btn').addEventListener('click', () => {
-    console.log('Visualizando modelo con URL corta:', model.shortUrl);
-    viewModel(encodeURIComponent(model.url), model.shortUrl, model.name);
+    viewModel(model.url, model.shortUrl, model.name, modelId, projectId);
   });
   
   div.querySelector('.qr-btn').addEventListener('click', () => {
-    showQRModal(encodeURIComponent(model.url), model.name, model.shortUrl);
+    showQRModal(model.url, model.name, model.shortUrl, modelId, projectId);
+  });
+  
+  div.querySelector('.edit-btn').addEventListener('click', () => {
+    showEditModelModal(projectId, modelId, model);
   });
   
   div.querySelector('.delete-btn').addEventListener('click', () => {
@@ -568,37 +538,27 @@ export async function updateProject() {
 // Funciones para manejo de códigos QR
 let currentQRUrl = '';
 
-// Función QR actualizada para usar v.html con hash
-export function showQRModal(modelUrl, modelName, shortUrl) {
+// Función para mostrar QR
+export function showQRModal(modelUrl, modelName, shortUrl, modelId, projectId) {
   try {
     let arViewerUrl;
     
-    if (shortUrl && shortUrl.includes('/v.html?h=')) {
-      // Si la URL corta ya existe pero apunta al localhost, 
-      // actualizarla a la URL de GitHub Pages si estamos en ese entorno
-      if (window.location.href.includes('ortomosaico.github.io') && 
-          shortUrl.includes('127.0.0.1') || 
-          shortUrl.includes('localhost')) {
-        
-        // Extraer el hash de la URL
-        const hash = shortUrl.split('h=')[1];
-        const baseUrl = getBaseUrl();
-        arViewerUrl = `${baseUrl}/v.html?h=${hash}`;
-        console.log('URL corta corregida para GitHub Pages:', arViewerUrl);
-      } else {
-        // Usar la URL corta tal como está
-        arViewerUrl = shortUrl;
-      }
+    if (shortUrl && shortUrl.includes('/ar.html?')) {
+      // Usar URL corta directamente
+      arViewerUrl = shortUrl;
+    } else if (projectId && modelId) {
+      // Generar URL basada en IDs
+      const baseUrl = getGlobalBaseUrl();
+      arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
     } else {
-      // URL de respaldo
-      const baseUrl = getBaseUrl();
+      // Fallback
+      const baseUrl = getGlobalBaseUrl();
       arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
     
-    // Mostrar la URL en el modal
+    // Generar QR...
     document.getElementById('qrUrl').textContent = arViewerUrl;
     
-    // Generar QR con la URL
     const qrContainer = document.getElementById('qrCode');
     qrContainer.innerHTML = '';
     
@@ -613,14 +573,11 @@ export function showQRModal(modelUrl, modelName, shortUrl) {
       });
     } catch (e) {
       console.error("Error al generar QR:", e);
-      // Alternativa API externa
       const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(arViewerUrl)}`;
       qrContainer.innerHTML = `<img src="${apiUrl}" alt="QR Code" style="width:256px; height:256px">`;
     }
     
-    // Mostrar el modal
     document.getElementById('qrModal').style.display = 'block';
-    
   } catch (error) {
     console.error('Error al mostrar QR:', error);
     alert('Error al mostrar QR: ' + error.message);
@@ -665,17 +622,69 @@ export function downloadQR() {
   }
 }
 
-// Función para obtener la URL base correcta (local o GitHub Pages)
-function getBaseUrl() {
-  const currentUrl = window.location.href;
+// Funciones para el modal de edición de modelo
+export function showEditModelModal(projectId, modelId, model) {
+  // Guardar IDs en el modal
+  const modal = document.getElementById('editModelModal');
+  modal.dataset.projectId = projectId;
+  modal.dataset.modelId = modelId;
   
-  // Verificar si estamos en GitHub Pages
-  if (currentUrl.includes('ortomosaico.github.io')) {
-    return 'https://ortomosaico.github.io/NexAR';
+  // Llenar los campos con la información actual
+  document.getElementById('editModelName').value = model.name;
+  document.getElementById('editModelDescription').value = model.description || '';
+  document.getElementById('editModelIsPublic').checked = model.isPublic === true;
+  
+  // Mostrar el modal
+  modal.style.display = 'block';
+}
+
+export function hideEditModelModal() {
+  document.getElementById('editModelModal').style.display = 'none';
+}
+
+// Función para actualizar un modelo
+export async function updateModel() {
+  try {
+    const modal = document.getElementById('editModelModal');
+    const projectId = modal.dataset.projectId;
+    const modelId = modal.dataset.modelId;
+    
+    if (!projectId || !modelId) {
+      throw new Error('IDs no encontrados');
+    }
+    
+    const name = document.getElementById('editModelName').value;
+    const description = document.getElementById('editModelDescription').value;
+    const isPublic = document.getElementById('editModelIsPublic').checked;
+    
+    if (!name) {
+      alert('Por favor, ingresa un nombre para el modelo');
+      return;
+    }
+    
+    // Referencia al documento del proyecto
+    const projectRef = doc(db, 'projects', projectId);
+    
+    // Actualizar solo los campos necesarios en el modelo existente
+    await updateDoc(projectRef, {
+      [`models.${modelId}.name`]: name,
+      [`models.${modelId}.description`]: description,
+      [`models.${modelId}.isPublic`]: isPublic,
+      [`models.${modelId}.updatedAt`]: new Date()
+    });
+    
+    console.log('Modelo actualizado correctamente');
+    
+    // Cerrar modal
+    hideEditModelModal();
+    
+    // Refrescar la lista de modelos para mostrar los cambios
+    loadModels(projectId);
+    
+  } catch (error) {
+    console.error('Error al actualizar el modelo:', error);
+    alert('Error al actualizar el modelo: ' + error.message);
   }
-  
-  // De lo contrario, usar la URL base actual (localhost o cualquier otro host)
-  return window.location.origin;
 }
 
 // Hacer TODAS las funciones disponibles globalmente
@@ -695,3 +704,6 @@ window.testViewer = testViewer;
 window.showQRModal = showQRModal;
 window.hideQRModal = hideQRModal;
 window.downloadQR = downloadQR;
+window.showEditModelModal = showEditModelModal;
+window.hideEditModelModal = hideEditModelModal;
+window.updateModel = updateModel;
