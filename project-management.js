@@ -146,15 +146,31 @@ export function hideNewProjectModal() {
   document.getElementById('newProjectModal').style.display = 'none';
 }
 
+// Función forzada para obtener la URL base correcta SIEMPRE
+function getGlobalBaseUrl() {
+  // URL de producción fija - REEMPLAZA ESTO CON TU URL DE PRODUCCIÓN REAL
+  const PRODUCTION_URL = "https://ortomosaico.github.io/NexAR/"; // <-- CAMBIA ESTO
+  
+  // Si estamos en producción, usar la URL de producción fija
+  if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+    console.log('Usando URL de producción fija:', PRODUCTION_URL);
+    return PRODUCTION_URL;
+  }
+  
+  // Si estamos en desarrollo local, usar el origen actual
+  console.log('Usando URL local:', window.location.origin);
+  return window.location.origin;
+}
+
 // Función mejorada para ver modelo en AR, con mejor compatibilidad Android
 export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
   try {
     // Detectar si el usuario está en Android
     const isAndroid = /Android/i.test(navigator.userAgent);
     
-    // Obtener la URL base correcta
-    const baseUrl = getGlobalBaseUrl();
-    console.log('URL base para AR:', baseUrl);
+    // SOLUCIÓN TEMPORAL - FORZAR URL DE PRODUCCIÓN
+    const baseUrl = "https://tudominio.com"; // <-- CAMBIA ESTO A TU URL
+    console.log('Forzando URL base para AR:', baseUrl);
     
     // Determinar la URL para mostrar el modelo
     let arViewerUrl;
@@ -162,16 +178,18 @@ export function viewModel(modelUrl, shortUrl, modelName, modelId, projectId) {
     if (shortUrl && shortUrl.includes('/ar.html?')) {
       // Asegurarse que la URL corta use el dominio correcto
       if (shortUrl.startsWith('/')) {
-        // Si es una ruta relativa, convertirla a absoluta
         arViewerUrl = `${baseUrl}${shortUrl}`;
       } else {
-        arViewerUrl = shortUrl;
+        arViewerUrl = shortUrl.replace("http://localhost:8080", baseUrl)
+                             .replace("http://127.0.0.1:8080", baseUrl);
       }
     } else if (projectId && modelId) {
       arViewerUrl = `${baseUrl}/ar.html?id=${projectId}&model=${modelId}`;
     } else {
       arViewerUrl = `${baseUrl}/ar-viewer.html?url=${encodeURIComponent(modelUrl)}&name=${encodeURIComponent(modelName)}`;
     }
+    
+    console.log('URL final para AR:', arViewerUrl);
     
     // Registrar información para depurar
     console.log(`Abriendo modelo en AR - URL: ${arViewerUrl}`);
@@ -342,27 +360,6 @@ export async function uploadModel() {
     uploadBtn.disabled = false;
     
     alert('Error al subir modelo: ' + error.message);
-  }
-}
-
-// Función mejorada para obtener la URL base correcta del sitio
-function getGlobalBaseUrl() {
-  // Obtener la URL actual
-  const currentUrl = window.location.href;
-  
-  // Extraer el protocolo y dominio
-  const urlObj = new URL(currentUrl);
-  const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-  
-  console.log('URL base detectada:', baseUrl);
-  
-  // Si es localhost y estamos en desarrollo, usar localhost
-  // De lo contrario, usar la URL de producción
-  if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-    return baseUrl;
-  } else {
-    // URL de producción
-    return baseUrl;
   }
 }
 
